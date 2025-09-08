@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sequentialWorkflowMemory = void 0;
 const memory_1 = require("@mastra/memory");
-const libsql_1 = require("@mastra/libsql");
+const pg_1 = require("@mastra/pg");
 const openai_1 = require("@ai-sdk/openai");
 // Processadores comentados temporariamente por erro de importação
 // import { TokenLimiter, ToolCallFilter } from "@mastra/memory/processors";
@@ -11,12 +11,15 @@ const openai_1 = require("@ai-sdk/openai");
  * - Working Memory: Estado global da análise + contexto empresarial
  * - Thread Management: 1 thread por licitação com títulos automáticos
  * - Semantic Recall: Desabilitado (usaremos Pinecone diretamente nos tools)
+ * - PostgreSQL storage para produção
  */
 exports.sequentialWorkflowMemory = new memory_1.Memory({
-    // Armazenamento persistente
-    storage: new libsql_1.LibSQLStore({
-        url: process.env.STORAGE_DATABASE_URL || "file:./alicit_memory.db",
-    }),
+    // PostgreSQL storage para produção, fallback para desenvolvimento sem DB
+    ...(process.env.DATABASE_URL ? {
+        storage: new pg_1.PostgresStore({
+            connectionString: process.env.DATABASE_URL,
+        })
+    } : {}),
     // Vector store desabilitado temporariamente por incompatibilidade de tipos
     // TODO: Aguardar atualização de compatibilidade entre @mastra/core e @mastra/pinecone
     // vector: new PineconeVector({

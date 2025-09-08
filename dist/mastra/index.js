@@ -2,15 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.mastraTools = exports.sequentialWorkflowMemory = exports.sequentialAnalysisWorkflow = exports.sequentialAgents = exports.mastra = void 0;
 const mastra_1 = require("@mastra/core/mastra");
-// Removido temporariamente LibSQLStore devido a problemas no Render
-// import { LibSQLStore } from "@mastra/libsql";
+const pg_1 = require("@mastra/pg");
 // Importar arquitetura sequencial limpa
 const sequential_1 = require("./agents/sequential");
 const sequentialAnalysisWorkflowSimplified_1 = require("./workflows/sequentialAnalysisWorkflowSimplified");
 /**
  * Instância principal do Mastra com arquitetura sequencial
  * Sistema otimizado para análise progressiva de licitações
- * NOTA: Storage temporariamente removido para compatibilidade com Render
+ * Com PostgreSQL storage oficial do Mastra
  */
 exports.mastra = new mastra_1.Mastra({
     agents: {
@@ -19,9 +18,12 @@ exports.mastra = new mastra_1.Mastra({
     workflows: {
         sequentialAnalysisWorkflow: sequentialAnalysisWorkflowSimplified_1.sequentialAnalysisWorkflow,
     },
-    // storage: new LibSQLStore({
-    //   url: process.env.STORAGE_DATABASE_URL || "file:./alicit_storage.db",
-    // }),
+    // PostgreSQL storage oficial do Mastra
+    ...(process.env.DATABASE_URL ? {
+        storage: new pg_1.PostgresStore({
+            connectionString: process.env.DATABASE_URL,
+        })
+    } : {})
 });
 // Re-exportar componentes principais para facilitar uso
 var sequential_2 = require("./agents/sequential");

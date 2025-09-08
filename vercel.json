@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "npm run build",
+  "builds": [
+    {
+      "src": "dist/server.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["**"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/server.js"
+    }
+  ],
+  "functions": {
+    "dist/server.js": {
+      "maxDuration": 300,
+      "memory": 1024
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
