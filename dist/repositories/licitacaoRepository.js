@@ -1,7 +1,9 @@
-import { supabase } from '../config/supabase';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const supabase_1 = require("../config/supabase");
 class LicitacaoRepository {
     async getLicitacaoById(id) {
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacoes')
             .select('*')
             .eq('id', id)
@@ -19,7 +21,7 @@ class LicitacaoRepository {
         console.log(`📁 Upload: ${filename} → ${sanitizedFilename}`);
         // Determinar mimetype se não fornecido
         const contentType = mimetype || this.getMimeTypeFromFilename(filename);
-        const { error } = await supabase.storage
+        const { error } = await supabase_1.supabase.storage
             .from('licitacao-documentos')
             .upload(filePath, buffer, {
             contentType
@@ -51,7 +53,7 @@ class LicitacaoRepository {
         return mimeTypes[extension || 'pdf'] || 'application/pdf';
     }
     async createDocumento(documentoData) {
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacao_documentos')
             .insert(documentoData)
             .select()
@@ -62,7 +64,7 @@ class LicitacaoRepository {
         return data;
     }
     async documentosExistem(numeroControlePNCP) {
-        const { count, error } = await supabase
+        const { count, error } = await supabase_1.supabase
             .from('licitacao_documentos')
             .select('*', { count: 'exact', head: true })
             .eq('numero_controle_pncp', numeroControlePNCP);
@@ -72,7 +74,7 @@ class LicitacaoRepository {
         return (count || 0) > 0;
     }
     async getDocumentosByPNCP(numeroControlePNCP) {
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacao_documentos')
             .select('*')
             .eq('numero_controle_pncp', numeroControlePNCP)
@@ -83,7 +85,7 @@ class LicitacaoRepository {
         return data || [];
     }
     async getDocumentosByTipo(numeroControlePNCP, tipo) {
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacao_documentos')
             .select('*')
             .eq('numero_controle_pncp', numeroControlePNCP)
@@ -94,7 +96,7 @@ class LicitacaoRepository {
         return data || [];
     }
     async getDocumentoById(documentoId) {
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacao_documentos')
             .select('*')
             .eq('id', documentoId)
@@ -105,7 +107,7 @@ class LicitacaoRepository {
         return data;
     }
     async downloadDocumentoFromStorage(urlStorage) {
-        const { data, error } = await supabase.storage
+        const { data, error } = await supabase_1.supabase.storage
             .from('licitacao-documentos')
             .download(urlStorage);
         if (error) {
@@ -114,7 +116,7 @@ class LicitacaoRepository {
         return Buffer.from(await data.arrayBuffer());
     }
     async generateSignedUrl(urlStorage, expiresIn = 3600) {
-        const { data, error } = await supabase.storage
+        const { data, error } = await supabase_1.supabase.storage
             .from('licitacao-documentos')
             .createSignedUrl(urlStorage, expiresIn);
         if (error) {
@@ -123,7 +125,7 @@ class LicitacaoRepository {
         return data.signedUrl;
     }
     async deleteDocumento(documentoId) {
-        const { error } = await supabase
+        const { error } = await supabase_1.supabase
             .from('licitacao_documentos')
             .delete()
             .eq('id', documentoId);
@@ -132,7 +134,7 @@ class LicitacaoRepository {
         }
     }
     async deleteDocumentoFromStorage(urlStorage) {
-        const { error } = await supabase.storage
+        const { error } = await supabase_1.supabase.storage
             .from('licitacao-documentos')
             .remove([urlStorage]);
         if (error) {
@@ -140,4 +142,4 @@ class LicitacaoRepository {
         }
     }
 }
-export default new LicitacaoRepository();
+exports.default = new LicitacaoRepository();

@@ -1,4 +1,7 @@
-export class MarkdownParser {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MarkdownParser = void 0;
+class MarkdownParser {
     constructor(markdownContent) {
         this.sections = new Map();
         this.content = markdownContent;
@@ -297,3 +300,4 @@ export class MarkdownParser {
             .trim();
     }
 }
+exports.MarkdownParser = MarkdownParser;

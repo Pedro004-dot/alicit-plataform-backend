@@ -1,15 +1,18 @@
-import { createTool } from "@mastra/core/tools";
-import { z } from "zod";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.extractLegalData = void 0;
+const tools_1 = require("@mastra/core/tools");
+const zod_1 = require("zod");
 /**
  * Tool para extrair dados jurídico-documentais da licitação
  * Foca em requisitos de habilitação, documentos e cláusulas de risco
  */
-export const extractLegalData = createTool({
+exports.extractLegalData = (0, tools_1.createTool)({
     id: "extractLegalData",
     description: "Extrai requisitos de habilitação, documentos obrigatórios e cláusulas de risco",
-    inputSchema: z.object({
-        licitacaoId: z.string().describe("ID da licitação para análise"),
-        focusAreas: z.array(z.enum([
+    inputSchema: zod_1.z.object({
+        licitacaoId: zod_1.z.string().describe("ID da licitação para análise"),
+        focusAreas: zod_1.z.array(zod_1.z.enum([
             "habilitacao_juridica",
             "habilitacao_tecnica",
             "habilitacao_fiscal",
@@ -18,11 +21,11 @@ export const extractLegalData = createTool({
             "prazos_documentos"
         ])).describe("Áreas específicas de foco na extração")
     }),
-    outputSchema: z.object({
-        success: z.boolean(),
-        licitacaoId: z.string(),
-        extractedData: z.record(z.any()),
-        message: z.string()
+    outputSchema: zod_1.z.object({
+        success: zod_1.z.boolean(),
+        licitacaoId: zod_1.z.string(),
+        extractedData: zod_1.z.record(zod_1.z.any()),
+        message: zod_1.z.string()
     }),
     execute: async ({ context }) => {
         try {

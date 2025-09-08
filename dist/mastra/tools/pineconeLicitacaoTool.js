@@ -1,25 +1,61 @@
-import { createTool } from "@mastra/core/tools";
-import { z } from "zod";
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.extractDadosFinanceirosLicitacao = exports.extractObjetoLicitacao = exports.pineconeLicitacao = void 0;
+const tools_1 = require("@mastra/core/tools");
+const zod_1 = require("zod");
 /**
  * Tool para buscar dados da licitação no Pinecone
  * Utiliza busca vetorial para extrair informações específicas do edital
  */
-export const pineconeLicitacao = createTool({
+exports.pineconeLicitacao = (0, tools_1.createTool)({
     id: "pineconeLicitacao",
     description: "Busca informações específicas da licitação no Pinecone usando busca vetorial",
-    inputSchema: z.object({
-        licitacaoId: z.string().describe("ID da licitação"),
-        query: z.string().describe("Query específica para busca vetorial"),
-        topK: z.number().default(5).describe("Número de resultados mais relevantes"),
-        includeMetadata: z.boolean().default(true).describe("Incluir metadados dos chunks"),
+    inputSchema: zod_1.z.object({
+        licitacaoId: zod_1.z.string().describe("ID da licitação"),
+        query: zod_1.z.string().describe("Query específica para busca vetorial"),
+        topK: zod_1.z.number().default(5).describe("Número de resultados mais relevantes"),
+        includeMetadata: zod_1.z.boolean().default(true).describe("Incluir metadados dos chunks"),
     }),
-    outputSchema: z.object({
-        success: z.boolean(),
-        licitacaoId: z.string(),
-        query: z.string(),
-        results: z.array(z.any()),
-        totalResults: z.number(),
-        message: z.string()
+    outputSchema: zod_1.z.object({
+        success: zod_1.z.boolean(),
+        licitacaoId: zod_1.z.string(),
+        query: zod_1.z.string(),
+        results: zod_1.z.array(zod_1.z.any()),
+        totalResults: zod_1.z.number(),
+        message: zod_1.z.string()
     }),
     execute: async ({ context }) => {
         try {
@@ -65,9 +101,9 @@ export const pineconeLicitacao = createTool({
 async function queryPineconeForLicitacao(licitacaoId, query, topK) {
     try {
         // Importar Pinecone dinamicamente
-        const { Pinecone } = await import("@pinecone-database/pinecone");
-        const { openai } = await import("@ai-sdk/openai");
-        const { embed } = await import("ai");
+        const { Pinecone } = await Promise.resolve().then(() => __importStar(require("@pinecone-database/pinecone")));
+        const { openai } = await Promise.resolve().then(() => __importStar(require("@ai-sdk/openai")));
+        const { embed } = await Promise.resolve().then(() => __importStar(require("ai")));
         // Inicializar cliente Pinecone
         const pinecone = new Pinecone({
             apiKey: process.env.PINECONE_API_KEY || "",
@@ -112,17 +148,17 @@ async function queryPineconeForLicitacao(licitacaoId, query, topK) {
 /**
  * Tool especializada para extrair objeto da licitação
  */
-export const extractObjetoLicitacao = createTool({
+exports.extractObjetoLicitacao = (0, tools_1.createTool)({
     id: "extractObjetoLicitacao",
     description: "Extrai o objeto e especificações da licitação usando Pinecone",
-    inputSchema: z.object({
-        licitacaoId: z.string().describe("ID da licitação"),
+    inputSchema: zod_1.z.object({
+        licitacaoId: zod_1.z.string().describe("ID da licitação"),
     }),
-    outputSchema: z.object({
-        success: z.boolean(),
-        licitacaoId: z.string(),
-        objeto: z.record(z.any()),
-        message: z.string()
+    outputSchema: zod_1.z.object({
+        success: zod_1.z.boolean(),
+        licitacaoId: zod_1.z.string(),
+        objeto: zod_1.z.record(zod_1.z.any()),
+        message: zod_1.z.string()
     }),
     execute: async ({ context }) => {
         try {
@@ -154,17 +190,17 @@ export const extractObjetoLicitacao = createTool({
 /**
  * Tool especializada para extrair dados financeiros
  */
-export const extractDadosFinanceirosLicitacao = createTool({
+exports.extractDadosFinanceirosLicitacao = (0, tools_1.createTool)({
     id: "extractDadosFinanceirosLicitacao",
     description: "Extrai valores e condições financeiras da licitação usando Pinecone",
-    inputSchema: z.object({
-        licitacaoId: z.string().describe("ID da licitação"),
+    inputSchema: zod_1.z.object({
+        licitacaoId: zod_1.z.string().describe("ID da licitação"),
     }),
-    outputSchema: z.object({
-        success: z.boolean(),
-        licitacaoId: z.string(),
-        financial: z.record(z.any()),
-        message: z.string()
+    outputSchema: zod_1.z.object({
+        success: zod_1.z.boolean(),
+        licitacaoId: zod_1.z.string(),
+        financial: zod_1.z.record(zod_1.z.any()),
+        message: zod_1.z.string()
     }),
     execute: async ({ context }) => {
         try {

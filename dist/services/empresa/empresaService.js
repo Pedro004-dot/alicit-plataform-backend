@@ -1,10 +1,15 @@
-import empresaRepository from '../../repositories/empresaRepository';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const empresaRepository_1 = __importDefault(require("../../repositories/empresaRepository"));
 class EmpresaService {
     async buscarEmpresasParaMatching() {
         console.log('🏢 Iniciando busca de empresas para matching em lote...');
         try {
             // Buscar todas empresas ativas
-            const empresas = await empresaRepository.getAllEmpresas();
+            const empresas = await empresaRepository_1.default.getAllEmpresas();
             console.log(empresas);
             if (!empresas || empresas.length === 0) {
                 console.log('⚠️ Nenhuma empresa encontrada no sistema');
@@ -72,7 +77,7 @@ class EmpresaService {
         };
         // Buscar produtos da empresa
         try {
-            const produtos = await empresaRepository.getProdutosByEmpresaId(empresa.id);
+            const produtos = await empresaRepository_1.default.getProdutosByEmpresaId(empresa.id);
             if (produtos && produtos.length > 0) {
                 perfil.produtos = produtos.map((p) => p.produto);
                 perfil.termosInteresse.push(...produtos.map((p) => p.produto));
@@ -84,7 +89,7 @@ class EmpresaService {
         }
         // Buscar serviços da empresa
         try {
-            const servicos = await empresaRepository.getServicosByEmpresaId(empresa.id);
+            const servicos = await empresaRepository_1.default.getServicosByEmpresaId(empresa.id);
             if (servicos && servicos.length > 0) {
                 perfil.servicos = servicos.map((s) => s.servico);
                 perfil.termosInteresse.push(...servicos.map((s) => s.servico));
@@ -107,4 +112,4 @@ class EmpresaService {
         return perfil;
     }
 }
-export default new EmpresaService();
+exports.default = new EmpresaService();

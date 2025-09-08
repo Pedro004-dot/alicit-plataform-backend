@@ -1,4 +1,5 @@
+"use strict";
 /**
  * Tipos para chunking hierárquico de editais
  */
-export {};
+Object.defineProperty(exports, "__esModule", { value: true });

@@ -1,6 +1,11 @@
-import pncpAdapter from '../../adapters/pncpAdapter';
-import { RecursiveZipExtractor } from '../../adapters/recursiveZipExtractor';
-import pineconeLicitacaoRepository from '../../repositories/pineconeLicitacaoRepository';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const pncpAdapter_1 = __importDefault(require("../../adapters/pncpAdapter"));
+const recursiveZipExtractor_1 = require("../../adapters/recursiveZipExtractor");
+const pineconeLicitacaoRepository_1 = __importDefault(require("../../repositories/pineconeLicitacaoRepository"));
 /**
  * Baixa um arquivo da URL e retorna o buffer
  */
@@ -58,15 +63,15 @@ const getMimeTypeFromFilename = (filename, contentType) => {
 };
 const downloadLicitacaoPNCP = async (pncpId) => {
     console.log(`📥 Iniciando download de documentos para ${pncpId.numeroControlePNCP}...`);
-    const zipExtractor = new RecursiveZipExtractor();
+    const zipExtractor = new recursiveZipExtractor_1.RecursiveZipExtractor();
     // 1. Buscar dados da licitação no Redis
-    const licitacao = await pineconeLicitacaoRepository.getLicitacao(pncpId.numeroControlePNCP);
+    const licitacao = await pineconeLicitacaoRepository_1.default.getLicitacao(pncpId.numeroControlePNCP);
     if (!licitacao) {
         throw new Error(`Licitação ${pncpId.numeroControlePNCP} não encontrada no Pinecone`);
     }
     console.log(`📋 Licitação encontrada: ${licitacao.numeroControlePNCP}, ano ${licitacao.anoCompra}, sequencial ${licitacao.sequencialCompra}`);
     // 2. Buscar URLs dos documentos via adapter PNCP
-    const documentUrls = await pncpAdapter.downloadLicitacaoPNCP({
+    const documentUrls = await pncpAdapter_1.default.downloadLicitacaoPNCP({
         ano: licitacao.anoCompra || 0,
         sequencial: licitacao.sequencialCompra || 0,
         cnpj: licitacao.orgaoEntidade.cnpj || ''
@@ -124,4 +129,4 @@ const downloadLicitacaoPNCP = async (pncpId) => {
         }
     };
 };
-export default { downloadLicitacaoPNCP };
+exports.default = { downloadLicitacaoPNCP };

@@ -1,45 +1,48 @@
-import { createWorkflow, createStep } from "@mastra/core/workflows";
-import { z } from "zod";
-import { sequentialAgents } from "../agents/sequential";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sequentialAnalysisWorkflow = void 0;
+const workflows_1 = require("@mastra/core/workflows");
+const zod_1 = require("zod");
+const sequential_1 = require("../agents/sequential");
 // Schema de entrada do workflow
-const sequentialInputSchema = z.object({
-    licitacaoId: z.string().describe("ID da licitação para análise"),
-    empresaId: z.string().describe("ID da empresa cliente"),
-    empresaContext: z.object({
-        nome: z.string(),
-        cnpj: z.string(),
-        porte: z.enum(["Pequeno", "Médio", "Grande"]),
-        segmento: z.string(),
-        produtos: z.array(z.string()),
-        servicos: z.array(z.string()),
-        localizacao: z.string(),
-        capacidadeOperacional: z.string(),
-        documentosDisponiveis: z.record(z.any()).optional(),
+const sequentialInputSchema = zod_1.z.object({
+    licitacaoId: zod_1.z.string().describe("ID da licitação para análise"),
+    empresaId: zod_1.z.string().describe("ID da empresa cliente"),
+    empresaContext: zod_1.z.object({
+        nome: zod_1.z.string(),
+        cnpj: zod_1.z.string(),
+        porte: zod_1.z.enum(["Pequeno", "Médio", "Grande"]),
+        segmento: zod_1.z.string(),
+        produtos: zod_1.z.array(zod_1.z.string()),
+        servicos: zod_1.z.array(zod_1.z.string()),
+        localizacao: zod_1.z.string(),
+        capacidadeOperacional: zod_1.z.string(),
+        documentosDisponiveis: zod_1.z.record(zod_1.z.any()).optional(),
     }).optional(),
 });
 // Schema de saída do workflow
-const sequentialOutputSchema = z.object({
-    decision: z.enum(["PARTICIPAR", "NAO_PARTICIPAR"]).describe("Decisão final"),
-    consolidatedScore: z.number().min(0).max(100).describe("Score consolidado final"),
-    scores: z.object({
-        strategic: z.number().min(0).max(100),
-        operational: z.number().min(0).max(100),
-        legal: z.number().min(0).max(100),
-        financial: z.number().min(0).max(100),
+const sequentialOutputSchema = zod_1.z.object({
+    decision: zod_1.z.enum(["PARTICIPAR", "NAO_PARTICIPAR"]).describe("Decisão final"),
+    consolidatedScore: zod_1.z.number().min(0).max(100).describe("Score consolidado final"),
+    scores: zod_1.z.object({
+        strategic: zod_1.z.number().min(0).max(100),
+        operational: zod_1.z.number().min(0).max(100),
+        legal: zod_1.z.number().min(0).max(100),
+        financial: zod_1.z.number().min(0).max(100),
     }).describe("Scores individuais por análise"),
-    executiveReport: z.string().describe("Relatório executivo final"),
-    stoppedAt: z.enum(["strategic", "operational", "legal", "financial", "completed"]).describe("Etapa onde workflow parou"),
-    executionMetadata: z.object({
-        totalTimeMs: z.number(),
-        agentsExecuted: z.number(),
-        stoppedReason: z.string().optional(),
+    executiveReport: zod_1.z.string().describe("Relatório executivo final"),
+    stoppedAt: zod_1.z.enum(["strategic", "operational", "legal", "financial", "completed"]).describe("Etapa onde workflow parou"),
+    executionMetadata: zod_1.z.object({
+        totalTimeMs: zod_1.z.number(),
+        agentsExecuted: zod_1.z.number(),
+        stoppedReason: zod_1.z.string().optional(),
     }),
 });
 /**
  * STEP: Análise Sequencial Completa
  * Executa os 4 agentes em sequência com lógica de parada
  */
-const sequentialAnalysisStep = createStep({
+const sequentialAnalysisStep = (0, workflows_1.createStep)({
     id: "sequential-analysis-complete",
     description: "Executa análise sequencial com filtros progressivos",
     inputSchema: sequentialInputSchema,
@@ -68,7 +71,7 @@ const sequentialAnalysisStep = createStep({
             console.log('  threadId:', threadId);
             console.log('  resourceId:', empresaId);
             console.log('  prompt: "Analise a aderência estratégica da licitação', licitacaoId, 'com nossa empresa."');
-            const strategicResult = await sequentialAgents.strategicFitAgent.generate(`Analise a aderência estratégica da licitação ${licitacaoId} com nossa empresa.`, { threadId, resourceId: empresaId });
+            const strategicResult = await sequential_1.sequentialAgents.strategicFitAgent.generate(`Analise a aderência estratégica da licitação ${licitacaoId} com nossa empresa.`, { threadId, resourceId: empresaId });
             console.log('📝 RESPOSTA COMPLETA DO AGENTE ESTRATÉGICO:');
             console.log('  texto completo:', strategicResult.text?.substring(0, 300) + '...');
             console.log('  tool calls:', strategicResult.toolCalls?.length || 0);
@@ -82,7 +85,7 @@ const sequentialAnalysisStep = createStep({
             // ETAPA 2: Análise Operacional
             console.log(`⚙️ Executando análise operacional`);
             stoppedAt = "operational";
-            const operationalResult = await sequentialAgents.operationalAgent.generate(`Analise a capacidade operacional para executar a licitação ${licitacaoId}.`, { threadId, resourceId: empresaId });
+            const operationalResult = await sequential_1.sequentialAgents.operationalAgent.generate(`Analise a capacidade operacional para executar a licitação ${licitacaoId}.`, { threadId, resourceId: empresaId });
             scores.operational = extractScoreFromAnalysis(operationalResult.text || "");
             agentsExecuted = 2;
             console.log(`📊 Score operacional: ${scores.operational}/100`);
@@ -93,7 +96,7 @@ const sequentialAnalysisStep = createStep({
             // ETAPA 3: Análise Jurídico-Documental
             console.log(`⚖️ Executando análise jurídico-documental`);
             stoppedAt = "legal";
-            const legalResult = await sequentialAgents.legalDocAgent.generate(`Analise os aspectos jurídico-documentais da licitação ${licitacaoId}.`, { threadId, resourceId: empresaId });
+            const legalResult = await sequential_1.sequentialAgents.legalDocAgent.generate(`Analise os aspectos jurídico-documentais da licitação ${licitacaoId}.`, { threadId, resourceId: empresaId });
             scores.legal = extractScoreFromAnalysis(legalResult.text || "");
             agentsExecuted = 3;
             console.log(`📊 Score jurídico: ${scores.legal}/100`);
@@ -104,7 +107,7 @@ const sequentialAnalysisStep = createStep({
             // ETAPA 4: Análise Financeira
             console.log(`💰 Executando análise financeira`);
             stoppedAt = "financial";
-            const financialResult = await sequentialAgents.financialAgent.generate(`Faça a análise financeira consolidada da licitação ${licitacaoId}.`, { threadId, resourceId: empresaId });
+            const financialResult = await sequential_1.sequentialAgents.financialAgent.generate(`Faça a análise financeira consolidada da licitação ${licitacaoId}.`, { threadId, resourceId: empresaId });
             scores.financial = extractScoreFromAnalysis(financialResult.text || "");
             agentsExecuted = 4;
             stoppedAt = "completed";
@@ -141,7 +144,7 @@ const sequentialAnalysisStep = createStep({
 /**
  * WORKFLOW PRINCIPAL SEQUENCIAL SIMPLIFICADO
  */
-export const sequentialAnalysisWorkflow = createWorkflow({
+exports.sequentialAnalysisWorkflow = (0, workflows_1.createWorkflow)({
     id: "sequentialAnalysisWorkflow",
     description: "Workflow sequencial inteligente com filtros progressivos",
     inputSchema: sequentialInputSchema,

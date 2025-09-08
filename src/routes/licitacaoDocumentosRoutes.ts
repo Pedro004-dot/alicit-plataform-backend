@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { LicitacaoDocumentosController } from '../controller/licitacao/licitacaoDocumentosController.js';
-import { authMiddleware } from '../middleware/authMiddleware.js';
+import { LicitacaoDocumentosController } from '../controller/licitacao/licitacaoDocumentosController';
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 const controller = new LicitacaoDocumentosController();

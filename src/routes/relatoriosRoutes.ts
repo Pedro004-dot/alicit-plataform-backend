@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { RelatoriosController } from '../controller/edital/relatoriosController.js';
-import { authMiddleware } from '../middleware/authMiddleware.js';
+import { RelatoriosController } from '../controller/edital/relatoriosController';
+import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 const controller = new RelatoriosController();

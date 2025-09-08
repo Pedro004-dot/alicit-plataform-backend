@@ -1,4 +1,9 @@
-import licitacaoEmpresaRepository from "../../repositories/licitacaoEmpresaRepository";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const licitacaoEmpresaRepository_1 = __importDefault(require("../../repositories/licitacaoEmpresaRepository"));
 const statusValidos = [
     "nao_definido", "em_analise", "proposta", "enviada",
     "vencida", "recusada", "perdida"
@@ -11,7 +16,7 @@ const criar = async (data) => {
     if (!validarStatus(status)) {
         throw new Error(`Status inválido: ${status}`);
     }
-    return await licitacaoEmpresaRepository.criar({
+    return await licitacaoEmpresaRepository_1.default.criar({
         ...data,
         status
     });
@@ -20,20 +25,20 @@ const atualizarStatus = async (id, novoStatus) => {
     if (!validarStatus(novoStatus)) {
         throw new Error(`Status inválido: ${novoStatus}`);
     }
-    return await licitacaoEmpresaRepository.atualizarStatus(id, novoStatus);
+    return await licitacaoEmpresaRepository_1.default.atualizarStatus(id, novoStatus);
 };
 const listarPorEmpresa = async (cnpj) => {
-    return await licitacaoEmpresaRepository.listarPorEmpresa(cnpj);
+    return await licitacaoEmpresaRepository_1.default.listarPorEmpresa(cnpj);
 };
 const buscarPorId = async (id) => {
-    const licitacao = await licitacaoEmpresaRepository.buscarPorId(id);
+    const licitacao = await licitacaoEmpresaRepository_1.default.buscarPorId(id);
     if (!licitacao) {
         throw new Error("Licitação não encontrada");
     }
     return licitacao;
 };
 const buscarOuCriar = async (numeroControlePNCP, empresaCnpj) => {
-    const existente = await licitacaoEmpresaRepository.buscarPorChaves(numeroControlePNCP, empresaCnpj);
+    const existente = await licitacaoEmpresaRepository_1.default.buscarPorChaves(numeroControlePNCP, empresaCnpj);
     if (existente) {
         return existente;
     }
@@ -48,12 +53,12 @@ const atualizarStatusPorChaves = async (numeroControlePNCP, empresaCnpj, novoSta
         throw new Error(`Status inválido: ${novoStatus}`);
     }
     const licitacao = await buscarOuCriar(numeroControlePNCP, empresaCnpj);
-    return await licitacaoEmpresaRepository.atualizarStatus(licitacao.id, novoStatus);
+    return await licitacaoEmpresaRepository_1.default.atualizarStatus(licitacao.id, novoStatus);
 };
 const deletar = async (id) => {
-    return await licitacaoEmpresaRepository.deletar(id);
+    return await licitacaoEmpresaRepository_1.default.deletar(id);
 };
-export default {
+exports.default = {
     criar,
     atualizarStatus,
     atualizarStatusPorChaves,

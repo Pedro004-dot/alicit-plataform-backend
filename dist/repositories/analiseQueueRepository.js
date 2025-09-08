@@ -1,7 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const supabase_js_1 = require("@supabase/supabase-js");
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseKey);
 const criar = async (data) => {
     const { data: result, error } = await supabase
         .from('analises_queue')
@@ -102,7 +104,7 @@ const calcularPosicaoFila = async (id) => {
     }
     return (count || 0) + 1;
 };
-export default {
+exports.default = {
     criar,
     buscarPorNumeroControle,
     contarPorStatus,

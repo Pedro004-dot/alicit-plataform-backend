@@ -1,4 +1,7 @@
-import { normalizeText } from './textNormalization';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.calculateTfidfScore = void 0;
+const textNormalization_1 = require("./textNormalization");
 /**
  * Calcula TF-IDF e similaridade coseno entre dois conjuntos de termos
  * @param empresaTermos - Termos de interesse da empresa
@@ -44,8 +47,9 @@ const calculateTfIdf = (empresaTermos, licitacaoTermos) => {
  * @param licitacaoItens - Itens da licitação
  * @returns Score entre 0 e 1
  */
-export const calculateTfidfScore = (empresaTermos, licitacaoItens) => {
+const calculateTfidfScore = (empresaTermos, licitacaoItens) => {
     const allDescricoes = licitacaoItens.map(item => item.descricao);
-    const licitacaoTermos = normalizeText(allDescricoes.join(' '));
+    const licitacaoTermos = (0, textNormalization_1.normalizeText)(allDescricoes.join(' '));
     return calculateTfIdf(empresaTermos, licitacaoTermos);
 };
+exports.calculateTfidfScore = calculateTfidfScore;

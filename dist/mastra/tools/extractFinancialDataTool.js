@@ -1,15 +1,18 @@
-import { createTool } from "@mastra/core/tools";
-import { z } from "zod";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.extractFinancialData = void 0;
+const tools_1 = require("@mastra/core/tools");
+const zod_1 = require("zod");
 /**
  * Tool para extrair dados financeiros da licitação
  * Foca em valores, modalidade, garantias e condições de pagamento
  */
-export const extractFinancialData = createTool({
+exports.extractFinancialData = (0, tools_1.createTool)({
     id: "extractFinancialData",
     description: "Extrai dados financeiros da licitação: valores, modalidade, garantias e pagamento",
-    inputSchema: z.object({
-        licitacaoId: z.string().describe("ID da licitação para análise"),
-        extractionType: z.enum([
+    inputSchema: zod_1.z.object({
+        licitacaoId: zod_1.z.string().describe("ID da licitação para análise"),
+        extractionType: zod_1.z.enum([
             "valores_contratuais",
             "modalidade_licitacao",
             "garantias_exigidas",
@@ -17,12 +20,12 @@ export const extractFinancialData = createTool({
             "analise_completa"
         ]).describe("Tipo de extração financeira")
     }),
-    outputSchema: z.object({
-        success: z.boolean(),
-        licitacaoId: z.string().optional(),
-        extractionType: z.string().optional(),
-        financialData: z.record(z.any()),
-        message: z.string()
+    outputSchema: zod_1.z.object({
+        success: zod_1.z.boolean(),
+        licitacaoId: zod_1.z.string().optional(),
+        extractionType: zod_1.z.string().optional(),
+        financialData: zod_1.z.record(zod_1.z.any()),
+        message: zod_1.z.string()
     }),
     execute: async ({ context }) => {
         try {

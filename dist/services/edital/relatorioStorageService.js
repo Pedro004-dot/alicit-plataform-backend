@@ -1,14 +1,53 @@
-import relatoriosTecnicosRepository from '../../repositories/relatoriosTecnicosRepository';
-import licitacaoEmpresaRepository from '../../repositories/licitacaoEmpresaRepository';
-import * as fs from 'fs';
-export var TipoRelatorio;
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RelatorioStorageService = exports.TipoRelatorio = void 0;
+const relatoriosTecnicosRepository_1 = __importDefault(require("../../repositories/relatoriosTecnicosRepository"));
+const licitacaoEmpresaRepository_1 = __importDefault(require("../../repositories/licitacaoEmpresaRepository"));
+const fs = __importStar(require("fs"));
+var TipoRelatorio;
 (function (TipoRelatorio) {
     TipoRelatorio["ANALISE_COMPLETA"] = "analise-completa";
     TipoRelatorio["IMPUGNACAO"] = "impugnacao";
     TipoRelatorio["ESCLARECIMENTO"] = "esclarecimento";
     TipoRelatorio["ACOMPANHAMENTO"] = "acompanhamento";
-})(TipoRelatorio || (TipoRelatorio = {}));
-export class RelatorioStorageService {
+})(TipoRelatorio || (exports.TipoRelatorio = TipoRelatorio = {}));
+class RelatorioStorageService {
     async salvarRelatorio(empresaCNPJ, numeroControlePNCP, pdfPath, tipo = TipoRelatorio.ANALISE_COMPLETA, metadados, dadosPdf) {
         console.log(`💾 Salvando relatório ${tipo} para empresa ${empresaCNPJ} - licitação ${numeroControlePNCP}`);
         const licitacaoEmpresa = await this.buscarLicitacaoEmpresa(empresaCNPJ, numeroControlePNCP);
@@ -36,31 +75,31 @@ export class RelatorioStorageService {
             },
             dados_pdf: dadosPdf || {}
         };
-        const relatorioSalvo = await relatoriosTecnicosRepository.createRelatorio(relatorioData);
+        const relatorioSalvo = await relatoriosTecnicosRepository_1.default.createRelatorio(relatorioData);
         console.log(`✅ Relatório ${tipo} salvo: ${filename}`);
         return relatorioSalvo;
     }
     async buscarRelatorios(empresaCNPJ, numeroControlePNCP, tipo) {
         if (numeroControlePNCP && tipo) {
-            return await relatoriosTecnicosRepository.getRelatoriosByTipo(empresaCNPJ, numeroControlePNCP, tipo);
+            return await relatoriosTecnicosRepository_1.default.getRelatoriosByTipo(empresaCNPJ, numeroControlePNCP, tipo);
         }
         else if (numeroControlePNCP) {
-            const relatorio = await relatoriosTecnicosRepository.getRelatorioByEmpresaAndPNCP(empresaCNPJ, numeroControlePNCP);
+            const relatorio = await relatoriosTecnicosRepository_1.default.getRelatorioByEmpresaAndPNCP(empresaCNPJ, numeroControlePNCP);
             return relatorio ? [relatorio] : [];
         }
         else {
-            return await relatoriosTecnicosRepository.getRelatoriosByEmpresa(empresaCNPJ);
+            return await relatoriosTecnicosRepository_1.default.getRelatoriosByEmpresa(empresaCNPJ);
         }
     }
     async gerarUrlDownloadRelatorio(relatorioId, expiresIn = 3600) {
-        const relatorio = await relatoriosTecnicosRepository.getRelatorioById(relatorioId);
+        const relatorio = await relatoriosTecnicosRepository_1.default.getRelatorioById(relatorioId);
         if (!relatorio) {
             throw new Error(`Relatório com ID ${relatorioId} não encontrado`);
         }
-        return await relatoriosTecnicosRepository.generateSignedUrl(relatorio.url_storage, expiresIn);
+        return await relatoriosTecnicosRepository_1.default.generateSignedUrl(relatorio.url_storage, expiresIn);
     }
     async listarRelatoriosPorEmpresa(empresaCNPJ) {
-        const relatorios = await relatoriosTecnicosRepository.getRelatoriosByEmpresa(empresaCNPJ);
+        const relatorios = await relatoriosTecnicosRepository_1.default.getRelatoriosByEmpresa(empresaCNPJ);
         const organizados = relatorios.reduce((acc, relatorio) => {
             const pncp = relatorio.numero_controle_pncp;
             if (!acc[pncp]) {
@@ -77,7 +116,7 @@ export class RelatorioStorageService {
     async buscarLicitacaoEmpresa(empresaCNPJ, numeroControlePNCP) {
         try {
             console.log(`🔍 Buscando relação licitacao-empresa para CNPJ: ${empresaCNPJ} e PNCP: ${numeroControlePNCP}`);
-            const relacao = await licitacaoEmpresaRepository.buscarPorChaves(numeroControlePNCP, empresaCNPJ);
+            const relacao = await licitacaoEmpresaRepository_1.default.buscarPorChaves(numeroControlePNCP, empresaCNPJ);
             if (relacao) {
                 console.log(`✅ Relação encontrada: ${relacao.id}`);
                 return relacao;
@@ -91,22 +130,22 @@ export class RelatorioStorageService {
         }
     }
     async buscarRelatorioPorId(relatorioId) {
-        return await relatoriosTecnicosRepository.getRelatorioById(relatorioId);
+        return await relatoriosTecnicosRepository_1.default.getRelatorioById(relatorioId);
     }
     async downloadRelatorio(relatorioId) {
-        const relatorio = await relatoriosTecnicosRepository.getRelatorioById(relatorioId);
+        const relatorio = await relatoriosTecnicosRepository_1.default.getRelatorioById(relatorioId);
         if (!relatorio) {
             throw new Error(`Relatório com ID ${relatorioId} não encontrado`);
         }
-        const buffer = await relatoriosTecnicosRepository.downloadRelatorioFromStorage(relatorio.url_storage);
-        await relatoriosTecnicosRepository.updateStatus(relatorio.id, 'baixado');
+        const buffer = await relatoriosTecnicosRepository_1.default.downloadRelatorioFromStorage(relatorio.url_storage);
+        await relatoriosTecnicosRepository_1.default.updateStatus(relatorio.id, 'baixado');
         return buffer;
     }
     async relatorioExiste(empresaCNPJ, numeroControlePNCP) {
-        return await relatoriosTecnicosRepository.relatorioExiste(empresaCNPJ, numeroControlePNCP);
+        return await relatoriosTecnicosRepository_1.default.relatorioExiste(empresaCNPJ, numeroControlePNCP);
     }
     async deletarRelatorio(relatorioId) {
-        const relatorio = await relatoriosTecnicosRepository.getRelatorioById(relatorioId);
+        const relatorio = await relatoriosTecnicosRepository_1.default.getRelatorioById(relatorioId);
         if (!relatorio) {
             throw new Error(`Relatório com ID ${relatorioId} não encontrado`);
         }
@@ -116,7 +155,7 @@ export class RelatorioStorageService {
         catch (error) {
             console.warn(`⚠️ Erro ao deletar relatório do storage: ${error}`);
         }
-        await relatoriosTecnicosRepository.deleteRelatorio(relatorioId);
+        await relatoriosTecnicosRepository_1.default.deleteRelatorio(relatorioId);
         console.log(`🗑️ Relatório ${relatorio.nome_arquivo} deletado com sucesso`);
     }
     async uploadRelatorioToStorage(storagePath, buffer) {
@@ -146,3 +185,4 @@ export class RelatorioStorageService {
             throw error;
     }
 }
+exports.RelatorioStorageService = RelatorioStorageService;

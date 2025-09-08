@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middleware/authMiddleware.js';
-import createUserController from '../controller/user/createUserController.js';
-import getUserController from '../controller/user/getUserController.js';
-import putUserController from '../controller/user/putUserController.js';
-import deleteUserController from '../controller/user/deleteUserController.js';
-import getAllUserController from '../controller/user/getAllUserController.js';
-import { getUserEmpresasController } from '../controller/user/getUserEmpresasController.js';
+import { authMiddleware } from '../middleware/authMiddleware';
+import createUserController from '../controller/user/createUserController';
+import getUserController from '../controller/user/getUserController';
+import putUserController from '../controller/user/putUserController';
+import deleteUserController from '../controller/user/deleteUserController';
+import getAllUserController from '../controller/user/getAllUserController';
+import { getUserEmpresasController } from '../controller/user/getUserEmpresasController';
 
 const router = Router();    
  

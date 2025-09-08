@@ -1,8 +1,11 @@
-import { EditalAnalysisService } from "../../services/edital/analysisService";
-export class EditalAnalysisController {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.EditalAnalysisController = void 0;
+const analysisService_1 = require("../../services/edital/analysisService");
+class EditalAnalysisController {
     constructor() {
         this.initialized = false;
-        this.analysisService = new EditalAnalysisService();
+        this.analysisService = new analysisService_1.EditalAnalysisService();
     }
     async ensureInitialized() {
         if (!this.initialized) {
@@ -58,3 +61,4 @@ export class EditalAnalysisController {
         }
     }
 }
+exports.EditalAnalysisController = EditalAnalysisController;

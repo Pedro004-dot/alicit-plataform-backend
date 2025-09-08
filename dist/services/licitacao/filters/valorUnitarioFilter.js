@@ -1,4 +1,7 @@
-export const filtroValorUnitario = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.filtroValorUnitario = void 0;
+exports.filtroValorUnitario = {
     nome: 'valor_unitario',
     prioridade: 4,
     estaAtivo: (perfil) => {

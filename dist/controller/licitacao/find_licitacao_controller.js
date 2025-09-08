@@ -1,4 +1,9 @@
-import findLicitacaoService from "../../services/licitacao/findLicitacaoService";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const findLicitacaoService_1 = __importDefault(require("../../services/licitacao/findLicitacaoService"));
 const findLicitacao = async (req, res) => {
     try {
         const findRequest = req.body;
@@ -26,7 +31,7 @@ const findLicitacao = async (req, res) => {
             });
         }
         console.log('📊 Recebendo busca manual:', findRequest);
-        const licitacoes = await findLicitacaoService.findWithKeywordAndFilters(findRequest);
+        const licitacoes = await findLicitacaoService_1.default.findWithKeywordAndFilters(findRequest);
         res.status(200).json(licitacoes);
     }
     catch (error) {
@@ -34,5 +39,5 @@ const findLicitacao = async (req, res) => {
         res.status(500).json({ error: "Erro ao buscar licitação" });
     }
 };
-export default { findLicitacao };
+exports.default = { findLicitacao };
 //Objejtivo de buscar licitação pelo numero do controle PNCP

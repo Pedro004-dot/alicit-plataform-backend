@@ -1,7 +1,10 @@
-import { RelatorioStorageService } from '../../services/edital/relatorioStorageService';
-export class RelatoriosController {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RelatoriosController = void 0;
+const relatorioStorageService_1 = require("../../services/edital/relatorioStorageService");
+class RelatoriosController {
     constructor() {
-        this.relatoriosService = new RelatorioStorageService();
+        this.relatoriosService = new relatorioStorageService_1.RelatorioStorageService();
     }
     async listarRelatoriosEmpresa(req, res) {
         try {
@@ -119,3 +122,4 @@ export class RelatoriosController {
         }
     }
 }
+exports.RelatoriosController = RelatoriosController;

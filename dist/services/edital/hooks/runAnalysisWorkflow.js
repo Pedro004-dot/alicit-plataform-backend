@@ -1,5 +1,8 @@
-import { extractTechnicalSummary, extractImpugnacaoAnalysis } from './extractReportSections';
-import { EditalRAGService } from '../RAGService';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.runAnalysisWorkflow = runAnalysisWorkflow;
+const extractReportSections_1 = require("./extractReportSections");
+const RAGService_1 = require("../RAGService");
 // Build a focused context using RAG queries and apply a hard cap
 async function buildRagContext(rag, licitacaoId, queries, topK, maxChars) {
     const pieces = [];
@@ -33,9 +36,9 @@ async function collectAISDKText(stream) {
     }
     return text;
 }
-export async function runAnalysisWorkflow(documentsText, licitacaoId) {
+async function runAnalysisWorkflow(documentsText, licitacaoId) {
     console.log(`🔧 Executando análise com contexto reduzido via RAG para ${licitacaoId}`);
-    const rag = new EditalRAGService();
+    const rag = new RAGService_1.EditalRAGService();
     // Queries específicas por agente
     const technicalQueries = [
         'identificação do edital órgão licitante modalidade número data publicação objeto',
@@ -104,8 +107,8 @@ ${impugnacaoText || 'Não foi possível gerar a análise de impugnação.'}
 `;
         return {
             finalReport,
-            technicalSummary: extractTechnicalSummary(finalReport),
-            impugnacaoAnalysis: extractImpugnacaoAnalysis(finalReport),
+            technicalSummary: (0, extractReportSections_1.extractTechnicalSummary)(finalReport),
+            impugnacaoAnalysis: (0, extractReportSections_1.extractImpugnacaoAnalysis)(finalReport),
         };
     }
     catch (error) {

@@ -1,7 +1,13 @@
-import PDFParser from 'pdf2json';
-import pdfParse from 'pdf-parse';
-import { createHash } from 'crypto';
-export class PDFProcessorAdapter {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PDFProcessorAdapter = void 0;
+const pdf2json_1 = __importDefault(require("pdf2json"));
+const pdf_parse_1 = __importDefault(require("pdf-parse"));
+const crypto_1 = require("crypto");
+class PDFProcessorAdapter {
     /**
      * Valida se o buffer contém um PDF válido
      */
@@ -17,7 +23,7 @@ export class PDFProcessorAdapter {
      */
     async extractWithPdf2Json(document) {
         return new Promise((resolve, reject) => {
-            const pdfParser = new PDFParser();
+            const pdfParser = new pdf2json_1.default();
             const timeout = setTimeout(() => {
                 reject(new Error('Timeout no processamento com pdf2json'));
             }, 30000); // 30 segundos timeout
@@ -54,7 +60,7 @@ export class PDFProcessorAdapter {
      */
     async extractWithPdfParse(document) {
         try {
-            const data = await pdfParse(document.buffer);
+            const data = await (0, pdf_parse_1.default)(document.buffer);
             if (!data.text || data.text.trim().length === 0) {
                 throw new Error('PDF não contém texto extraível');
             }
@@ -206,6 +212,7 @@ export class PDFProcessorAdapter {
             .trim();
     }
     generateHash(buffer) {
-        return createHash('sha256').update(buffer).digest('hex');
+        return (0, crypto_1.createHash)('sha256').update(buffer).digest('hex');
     }
 }
+exports.PDFProcessorAdapter = PDFProcessorAdapter;

@@ -1,4 +1,9 @@
-import recomendacaoService from "../../services/licitacao/recomendacaoService";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const recomendacaoService_1 = __importDefault(require("../../services/licitacao/recomendacaoService"));
 const listarRecomendacoes = async (req, res) => {
     try {
         const { cnpj } = req.params;
@@ -10,7 +15,7 @@ const listarRecomendacoes = async (req, res) => {
         // Decodificar CNPJ da URL
         const decodedCnpj = decodeURIComponent(cnpj);
         console.log(`📋 Listando recomendações para empresa ${decodedCnpj}`);
-        const resultado = await recomendacaoService.listarRecomendacoesPendentes(decodedCnpj);
+        const resultado = await recomendacaoService_1.default.listarRecomendacoesPendentes(decodedCnpj);
         res.status(200).json(resultado);
     }
     catch (error) {
@@ -27,7 +32,7 @@ const removerRecomendacao = async (req, res) => {
             });
         }
         console.log(`🗑️ Removendo recomendação ${numeroControlePNCP} da empresa ${empresaCnpj}`);
-        const resultado = await recomendacaoService.removerRecomendacao(numeroControlePNCP, empresaCnpj);
+        const resultado = await recomendacaoService_1.default.removerRecomendacao(numeroControlePNCP, empresaCnpj);
         res.status(200).json(resultado);
     }
     catch (error) {
@@ -39,7 +44,7 @@ const limparRecomendacoesAntigas = async (req, res) => {
     try {
         const { dias = 30 } = req.body;
         console.log(`🧹 Limpando recomendações antigas (>${dias} dias)`);
-        const resultado = await recomendacaoService.limparRecomendacoesAntigas(dias);
+        const resultado = await recomendacaoService_1.default.limparRecomendacoesAntigas(dias);
         res.status(200).json(resultado);
     }
     catch (error) {
@@ -47,7 +52,7 @@ const limparRecomendacoesAntigas = async (req, res) => {
         res.status(500).json({ error: "Erro ao limpar recomendações antigas" });
     }
 };
-export default {
+exports.default = {
     listarRecomendacoes,
     removerRecomendacao,
     limparRecomendacoesAntigas

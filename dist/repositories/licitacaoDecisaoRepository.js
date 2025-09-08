@@ -1,8 +1,10 @@
-import { supabase } from '../config/supabase';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const supabase_1 = require("../config/supabase");
 class LicitacaoDecisaoRepository {
     async salvarLicitacaoCompleta(licitacao) {
         // Salvar licitação principal usando UPSERT para evitar duplicatas
-        const { data: licitacaoData, error: licitacaoError } = await supabase
+        const { data: licitacaoData, error: licitacaoError } = await supabase_1.supabase
             .from('licitacoes')
             .upsert({
             numero_controle_pncp: licitacao.numeroControlePNCP,
@@ -55,7 +57,7 @@ class LicitacaoDecisaoRepository {
         // Salvar itens da licitação (limpar itens existentes e inserir novos)
         if (licitacao.itens && licitacao.itens.length > 0) {
             // Deletar itens existentes
-            await supabase
+            await supabase_1.supabase
                 .from('licitacao_itens')
                 .delete()
                 .eq('numero_controle_pncp', licitacao.numeroControlePNCP);
@@ -88,7 +90,7 @@ class LicitacaoDecisaoRepository {
                 data_atualizacao: item.dataAtualizacao,
                 tem_resultado: item.temResultado
             }));
-            const { error: itensError } = await supabase
+            const { error: itensError } = await supabase_1.supabase
                 .from('licitacao_itens')
                 .insert(itensFormatados);
             if (itensError) {
@@ -98,7 +100,7 @@ class LicitacaoDecisaoRepository {
         return licitacaoData;
     }
     async salvarDecisao(dados) {
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacoes_empresa')
             .insert({
             numero_controle_pncp: dados.numeroControlePNCP,
@@ -113,7 +115,7 @@ class LicitacaoDecisaoRepository {
         return data;
     }
     async verificarDecisaoExistente(numeroControlePNCP, empresaCnpj) {
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacoes_empresa')
             .select('*')
             .eq('numero_controle_pncp', numeroControlePNCP)
@@ -125,7 +127,7 @@ class LicitacaoDecisaoRepository {
         return data;
     }
     async getLicitacao(numeroControlePNCP) {
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacoes')
             .select('*')
             .eq('numero_controle_pncp', numeroControlePNCP)
@@ -138,7 +140,7 @@ class LicitacaoDecisaoRepository {
     async criarOuAtualizarDecisao(dados) {
         const decisaoExistente = await this.verificarDecisaoExistente(dados.numeroControlePNCP, dados.empresaCnpj);
         if (decisaoExistente) {
-            const { data, error } = await supabase
+            const { data, error } = await supabase_1.supabase
                 .from('licitacoes_empresa')
                 .update({
                 status: dados.statusAprovacao
@@ -154,7 +156,7 @@ class LicitacaoDecisaoRepository {
         return await this.salvarDecisao(dados);
     }
     async criarEstagio(dados) {
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacao_estagios')
             .insert({
             licitacao_empresa_id: dados.licitacaoEmpresaId,
@@ -168,7 +170,7 @@ class LicitacaoDecisaoRepository {
         return data;
     }
     async listarLicitacoesAprovadas(empresaCnpj) {
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacoes_empresa')
             .select(`
         *,
@@ -202,7 +204,7 @@ class LicitacaoDecisaoRepository {
     }
     async atualizarEstagio(licitacaoEmpresaId, novoEstagio, observacoes) {
         // Finalizar estágio atual
-        await supabase
+        await supabase_1.supabase
             .from('licitacao_estagios')
             .update({
             ativo: false,
@@ -211,7 +213,7 @@ class LicitacaoDecisaoRepository {
             .eq('licitacao_empresa_id', licitacaoEmpresaId)
             .eq('ativo', true);
         // Criar novo estágio
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacao_estagios')
             .insert({
             licitacao_empresa_id: licitacaoEmpresaId,
@@ -226,4 +228,4 @@ class LicitacaoDecisaoRepository {
         return data;
     }
 }
-export default new LicitacaoDecisaoRepository();
+exports.default = new LicitacaoDecisaoRepository();

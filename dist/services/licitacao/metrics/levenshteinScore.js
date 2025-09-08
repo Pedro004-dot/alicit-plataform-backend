@@ -1,4 +1,7 @@
-import { normalizeText } from './textNormalization';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.calculateLevenshteinScore = void 0;
+const textNormalization_1 = require("./textNormalization");
 /**
  * Calcula distância de Levenshtein entre duas strings
  * @param str1 - Primeira string
@@ -25,9 +28,9 @@ const calculateLevenshteinDistance = (str1, str2) => {
  * @param licitacaoItens - Itens da licitação
  * @returns Score entre 0 e 1
  */
-export const calculateLevenshteinScore = (empresaTermos, licitacaoItens) => {
+const calculateLevenshteinScore = (empresaTermos, licitacaoItens) => {
     const allDescricoes = licitacaoItens.map(item => item.descricao).join(' ');
-    const licitacaoTermos = normalizeText(allDescricoes);
+    const licitacaoTermos = (0, textNormalization_1.normalizeText)(allDescricoes);
     let totalSimilarity = 0;
     let comparisons = 0;
     for (const empresaTermo of empresaTermos) {
@@ -43,3 +46,4 @@ export const calculateLevenshteinScore = (empresaTermos, licitacaoItens) => {
     }
     return comparisons > 0 ? totalSimilarity / comparisons : 0;
 };
+exports.calculateLevenshteinScore = calculateLevenshteinScore;

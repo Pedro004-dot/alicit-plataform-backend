@@ -1,14 +1,17 @@
-import { generateEditalHash } from "./hooks";
-import { processDocuments } from "./rag/extract/processDocuments";
-import { chunkDocuments } from "./rag/chunk/chunkDocuments";
-import { PineconeStorage } from "./rag/storage/PineconeStorage";
-import { HybridSearch } from "./rag/search/HybridSearch";
-import { LicitacaoDocumentosService } from "../licitacao/licitacaoDocumentosService";
-export class EditalRAGService {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.EditalRAGService = void 0;
+const hooks_1 = require("./hooks");
+const processDocuments_1 = require("./rag/extract/processDocuments");
+const chunkDocuments_1 = require("./rag/chunk/chunkDocuments");
+const PineconeStorage_1 = require("./rag/storage/PineconeStorage");
+const HybridSearch_1 = require("./rag/search/HybridSearch");
+const licitacaoDocumentosService_1 = require("../licitacao/licitacaoDocumentosService");
+class EditalRAGService {
     constructor() {
-        this.vectorStorage = new PineconeStorage();
-        this.hybridSearch = new HybridSearch(this.vectorStorage);
-        this.licitacaoDocumentosService = new LicitacaoDocumentosService();
+        this.vectorStorage = new PineconeStorage_1.PineconeStorage();
+        this.hybridSearch = new HybridSearch_1.HybridSearch(this.vectorStorage);
+        this.licitacaoDocumentosService = new licitacaoDocumentosService_1.LicitacaoDocumentosService();
     }
     async initialize() {
         await this.vectorStorage.initialize();
@@ -53,11 +56,11 @@ export class EditalRAGService {
             documents: documentsToProcess
         };
         // 1. Extrair texto dos documentos
-        const editalDocuments = await processDocuments(processRequest);
+        const editalDocuments = await (0, processDocuments_1.processDocuments)(processRequest);
         console.log(`📋 Documentos processados: ${editalDocuments.length}`);
         console.log(`📊 Total caracteres extraídos: ${editalDocuments.reduce((sum, doc) => sum + doc.text.length, 0)}`);
         // 2. Chunking hierárquico
-        const chunks = await chunkDocuments(editalDocuments);
+        const chunks = await (0, chunkDocuments_1.chunkDocuments)(editalDocuments);
         console.log(`🔧 Chunks criados: ${chunks.length}`);
         // 3. Gerar embeddings
         const chunksWithEmbeddings = await this.vectorStorage.generateEmbeddings(chunks);
@@ -71,7 +74,7 @@ export class EditalRAGService {
         return {
             licitacaoId,
             processed: true,
-            editalHash: generateEditalHash(empresaId),
+            editalHash: (0, hooks_1.generateEditalHash)(empresaId),
             documentsCount: editalDocuments.length,
             chunksCount: chunks.length,
         };
@@ -84,3 +87,4 @@ export class EditalRAGService {
         return await this.vectorStorage.isEditalProcessed(licitacaoId);
     }
 }
+exports.EditalRAGService = EditalRAGService;

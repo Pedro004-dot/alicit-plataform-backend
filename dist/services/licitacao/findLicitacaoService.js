@@ -1,13 +1,18 @@
-import pineconeLicitacaoRepository from '../../repositories/pineconeLicitacaoRepository';
-import { calculateMatchingScore } from './metrics';
-import { clearCoordenadasCache, clearCidadesRaioCache } from './geolocation';
-import { aplicarFiltrosAtivos } from './filters';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const pineconeLicitacaoRepository_1 = __importDefault(require("../../repositories/pineconeLicitacaoRepository"));
+const metrics_1 = require("./metrics");
+const geolocation_1 = require("./geolocation");
+const filters_1 = require("./filters");
 /**
  * Busca todas as licitações armazenadas no Pinecone
  * @returns Array de licitações válidas
  */
 const findLicitacao = async () => {
-    return await pineconeLicitacaoRepository.getAllLicitacoes();
+    return await pineconeLicitacaoRepository_1.default.getAllLicitacoes();
 };
 /**
  * Calcula matching entre perfil da empresa e licitações usando algoritmos tradicionais
@@ -21,12 +26,12 @@ const calculateMatching = async (empresaPerfil) => {
         const licitacoes = await findLicitacao();
         console.log(`🔍 Encontradas ${licitacoes.length} licitações para análise`);
         // Aplicar filtros
-        const resultadoFiltros = await aplicarFiltrosAtivos(licitacoes, empresaPerfil);
+        const resultadoFiltros = await (0, filters_1.aplicarFiltrosAtivos)(licitacoes, empresaPerfil);
         console.log(`🔍 Filtros aplicados: ${resultadoFiltros.filtrosAplicados.join(', ') || 'nenhum'}`);
         console.log(`📊 ${resultadoFiltros.estatisticas.totalInicial} → ${resultadoFiltros.estatisticas.totalFinal} licitações (${resultadoFiltros.estatisticas.reducaoPercentual}% filtradas)`);
         // Calcular matching scores
         const matches = resultadoFiltros.licitacoesFiltradas
-            .map(licitacao => calculateMatchingScore(empresaPerfil, licitacao))
+            .map(licitacao => (0, metrics_1.calculateMatchingScore)(empresaPerfil, licitacao))
             .filter(match => match.matchScore > 0.1)
             .sort((a, b) => b.matchScore - a.matchScore);
         console.log(`✅ Matching tradicional concluído: ${matches.length} resultados finais`);
@@ -41,8 +46,8 @@ const calculateMatching = async (empresaPerfil) => {
  * Limpa todos os caches de coordenadas e raio
  */
 const clearGeographicCache = () => {
-    clearCoordenadasCache();
-    clearCidadesRaioCache();
+    (0, geolocation_1.clearCoordenadasCache)();
+    (0, geolocation_1.clearCidadesRaioCache)();
     console.log('🧹 Cache geográfico limpo');
 };
 const findWithKeywordAndFilters = async (findRequest) => {
@@ -69,7 +74,7 @@ const findWithKeywordAndFilters = async (findRequest) => {
             valorMaximo: findRequest.valorMaximo
         };
         // Aplicar filtros usando função existente
-        const resultadoFiltros = await aplicarFiltrosAtivos(licitacoesFiltradas, empresaPerfil);
+        const resultadoFiltros = await (0, filters_1.aplicarFiltrosAtivos)(licitacoesFiltradas, empresaPerfil);
         console.log(`✅ Busca manual concluída: ${resultadoFiltros.licitacoesFiltradas.length} resultados finais`);
         return resultadoFiltros.licitacoesFiltradas;
     }
@@ -78,9 +83,9 @@ const findWithKeywordAndFilters = async (findRequest) => {
         return [];
     }
 };
-export default {
+exports.default = {
     calculateMatching,
     findWithKeywordAndFilters,
-    clearCache: pineconeLicitacaoRepository.clearAllCaches,
+    clearCache: pineconeLicitacaoRepository_1.default.clearAllCaches,
     clearGeographicCache
 };

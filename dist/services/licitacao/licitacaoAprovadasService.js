@@ -1,7 +1,12 @@
-import licitacaoDecisaoRepository from '../../repositories/licitacaoDecisaoRepository';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const licitacaoDecisaoRepository_1 = __importDefault(require("../../repositories/licitacaoDecisaoRepository"));
 class LicitacaoAprovadasService {
     async listarLicitacoesAprovadas(empresaCnpj) {
-        const licitacoes = await licitacaoDecisaoRepository
+        const licitacoes = await licitacaoDecisaoRepository_1.default
             .listarLicitacoesAprovadas(empresaCnpj);
         return {
             success: true,
@@ -10,4 +15,4 @@ class LicitacaoAprovadasService {
         };
     }
 }
-export default new LicitacaoAprovadasService();
+exports.default = new LicitacaoAprovadasService();

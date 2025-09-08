@@ -1,13 +1,16 @@
-import { Agent } from "@mastra/core/agent";
-import { openai } from "@ai-sdk/openai";
-import { sequentialWorkflowMemory } from "../../config/memoryConfig";
-import { pineconeLicitacao, updateWorkingMemory, extractDatesFromText, getCurrentDate, supabaseEmpresa } from "../../tools";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.operationalAgent = void 0;
+const agent_1 = require("@mastra/core/agent");
+const openai_1 = require("@ai-sdk/openai");
+const memoryConfig_1 = require("../../config/memoryConfig");
+const tools_1 = require("../../tools");
 /**
  * Agente 2: Análise Operacional
  * Especialidade: Capacidade da empresa de executar o contrato
  * Segunda etapa do workflow sequencial
  */
-export const operationalAgent = new Agent({
+exports.operationalAgent = new agent_1.Agent({
     name: "OperationalAgent",
     description: "Avalia capacidade operacional da empresa para executar o contrato",
     instructions: `
@@ -99,13 +102,13 @@ Você é o segundo agente no workflow sequencial. Sua função é avaliar se a e
 - Avalie necessidade de investimentos vs retorno esperado
 - Sempre atualize working memory com resultado detalhado
 `,
-    model: openai("gpt-4o"),
-    memory: sequentialWorkflowMemory,
+    model: (0, openai_1.openai)("gpt-4o"),
+    memory: memoryConfig_1.sequentialWorkflowMemory,
     tools: {
-        pineconeLicitacao,
-        updateWorkingMemory,
-        extractDatesFromText,
-        getCurrentDate,
-        supabaseEmpresa
+        pineconeLicitacao: tools_1.pineconeLicitacao,
+        updateWorkingMemory: tools_1.updateWorkingMemory,
+        extractDatesFromText: tools_1.extractDatesFromText,
+        getCurrentDate: tools_1.getCurrentDate,
+        supabaseEmpresa: tools_1.supabaseEmpresa
     },
 });

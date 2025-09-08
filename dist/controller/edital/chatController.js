@@ -1,7 +1,10 @@
-import { EditalChatService } from "../../services/edital/chatService";
-export class EditalChatController {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.EditalChatController = void 0;
+const chatService_1 = require("../../services/edital/chatService");
+class EditalChatController {
     constructor() {
-        this.chatService = new EditalChatService();
+        this.chatService = new chatService_1.EditalChatService();
     }
     async chat(req, res) {
         try {
@@ -19,3 +22,4 @@ export class EditalChatController {
         }
     }
 }
+exports.EditalChatController = EditalChatController;

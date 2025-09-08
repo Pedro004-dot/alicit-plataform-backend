@@ -1,12 +1,18 @@
-import { EditalRAGService } from "./RAGService";
-import { generatePDFReport, extractTechnicalSummary, extractImpugnacaoAnalysis } from "./hooks";
-import { mastra } from "../../mastra";
-import empresaRepository from "../../repositories/empresaRepository";
-import { RelatorioStorageService, TipoRelatorio } from "./relatorioStorageService";
-export class EditalAnalysisService {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.EditalAnalysisService = void 0;
+const RAGService_1 = require("./RAGService");
+const hooks_1 = require("./hooks");
+const mastra_1 = require("../../mastra");
+const empresaRepository_1 = __importDefault(require("../../repositories/empresaRepository"));
+const relatorioStorageService_1 = require("./relatorioStorageService");
+class EditalAnalysisService {
     constructor() {
-        this.ragService = new EditalRAGService();
-        this.relatoriosService = new RelatorioStorageService();
+        this.ragService = new RAGService_1.EditalRAGService();
+        this.relatoriosService = new relatorioStorageService_1.RelatorioStorageService();
     }
     async initialize() {
         await this.ragService.initialize();
@@ -21,7 +27,7 @@ export class EditalAnalysisService {
         }
         try {
             console.log(`🔍 Buscando contexto da empresa por CNPJ: ${empresaCNPJ}`);
-            const empresa = await empresaRepository.getEmpresaByCnpj(empresaCNPJ);
+            const empresa = await empresaRepository_1.default.getEmpresaByCnpj(empresaCNPJ);
             if (!empresa) {
                 console.log(`❌ Empresa não encontrada: ${empresaCNPJ}`);
                 return null;
@@ -84,7 +90,7 @@ export class EditalAnalysisService {
             let workflowError = null;
             try {
                 console.log('🔄 Obtendo workflow editalAnalysisWorkflow...');
-                const workflow = mastra.getWorkflow('sequentialAnalysisWorkflow');
+                const workflow = mastra_1.mastra.getWorkflow('sequentialAnalysisWorkflow');
                 console.log('✅ Workflow obtido, criando run...');
                 const run = await workflow.createRunAsync();
                 console.log('✅ Run criado, iniciando execução...');
@@ -151,8 +157,8 @@ export class EditalAnalysisService {
             console.log('📄 Preparando dados para PDF...');
             console.log('📄 finalReport length:', finalReport?.length || 0);
             console.log('📄 finalReport type:', typeof finalReport);
-            const technicalSummary = extractTechnicalSummary(finalReport);
-            const impugnacaoAnalysis = extractImpugnacaoAnalysis(finalReport);
+            const technicalSummary = (0, hooks_1.extractTechnicalSummary)(finalReport);
+            const impugnacaoAnalysis = (0, hooks_1.extractImpugnacaoAnalysis)(finalReport);
             console.log('📄 technicalSummary length:', technicalSummary?.length || 0);
             console.log('📄 impugnacaoAnalysis length:', impugnacaoAnalysis?.length || 0);
             const pdfData = {
@@ -172,11 +178,11 @@ export class EditalAnalysisService {
                 technicalSummaryLength: pdfData.technicalSummary?.length || 0,
                 impugnacaoAnalysisLength: pdfData.impugnacaoAnalysis?.length || 0
             }));
-            const { pdfPath, dadosPdf } = await generatePDFReport(pdfData);
+            const { pdfPath, dadosPdf } = await (0, hooks_1.generatePDFReport)(pdfData);
             // Salvar relatório no Supabase Storage se empresaCNPJ fornecido
             if (request.empresaCNPJ) {
                 try {
-                    await this.relatoriosService.salvarRelatorio(request.empresaCNPJ, request.licitacaoId, pdfPath, TipoRelatorio.ANALISE_COMPLETA, {
+                    await this.relatoriosService.salvarRelatorio(request.empresaCNPJ, request.licitacaoId, pdfPath, relatorioStorageService_1.TipoRelatorio.ANALISE_COMPLETA, {
                         qualityScore: validationScore,
                         processedAt: new Date().toISOString(),
                         documentsAnalyzed: ragResult.documentsCount,
@@ -193,8 +199,8 @@ export class EditalAnalysisService {
                 licitacaoId: request.licitacaoId,
                 processedAt: new Date().toISOString(),
                 pdfPath,
-                technicalSummary: extractTechnicalSummary(finalReport),
-                impugnacaoAnalysis: extractImpugnacaoAnalysis(finalReport),
+                technicalSummary: (0, hooks_1.extractTechnicalSummary)(finalReport),
+                impugnacaoAnalysis: (0, hooks_1.extractImpugnacaoAnalysis)(finalReport),
                 finalReport,
                 validationScore,
             };
@@ -223,3 +229,4 @@ export class EditalAnalysisService {
         return await this.ragService.isEditalProcessed(licitacaoId);
     }
 }
+exports.EditalAnalysisService = EditalAnalysisService;

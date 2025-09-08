@@ -1,8 +1,13 @@
-import licitacaoEmpresaRepository from "../../repositories/licitacaoEmpresaRepository";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const licitacaoEmpresaRepository_1 = __importDefault(require("../../repositories/licitacaoEmpresaRepository"));
 class DashboardService {
     async getDashboardData(cnpj) {
         // Buscar todas as licitações da empresa
-        const licitacoes = await licitacaoEmpresaRepository.listarPorEmpresa(cnpj);
+        const licitacoes = await licitacaoEmpresaRepository_1.default.listarPorEmpresa(cnpj);
         // Contar por status
         const contadores = {
             analise: 0,
@@ -32,7 +37,7 @@ class DashboardService {
     async getLicitacoesComEstagios(cnpj) {
         // Como a tabela de estágios está vazia, vamos usar o repositório principal
         // e simular os estágios baseados no status
-        const licitacoes = await licitacaoEmpresaRepository.listarPorEmpresa(cnpj);
+        const licitacoes = await licitacaoEmpresaRepository_1.default.listarPorEmpresa(cnpj);
         // Mapear dados para formato esperado pelo frontend
         return licitacoes.map((item) => ({
             id: item.id.toString(),
@@ -68,4 +73,4 @@ class DashboardService {
         return mapeamento[status] || 'analise';
     }
 }
-export default new DashboardService();
+exports.default = new DashboardService();

@@ -1,4 +1,9 @@
-import createEmpresaService from "../../services/empresa/createEmpresaService";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const createEmpresaService_js_1 = __importDefault(require("../../services/empresa/createEmpresaService.js"));
 const createEmpresa = async (req, res) => {
     try {
         const empresaInput = req.body;
@@ -15,7 +20,7 @@ const createEmpresa = async (req, res) => {
         if (!usuario_id) {
             return res.status(400).json({ error: "Usuário não autenticado" });
         }
-        const search = await createEmpresaService.createEmpresa({ ...empresaInput, usuario_id: Number(usuario_id) });
+        const search = await createEmpresaService_js_1.default.createEmpresa({ ...empresaInput, usuario_id: Number(usuario_id) });
         res.status(201).json(search);
         return search;
     }
@@ -24,4 +29,4 @@ const createEmpresa = async (req, res) => {
         res.status(500).json({ error: error.message || "Erro ao criar empresa" });
     }
 };
-export default { createEmpresa };
+exports.default = { createEmpresa };

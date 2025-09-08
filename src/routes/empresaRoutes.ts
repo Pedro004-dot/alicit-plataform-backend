@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middleware/authMiddleware.js';
-import createEmpresaController from '../controller/empresa/createEmpresaController.js';
-import getAllEmpresaController from '../controller/empresa/getAllEmpresaController.js';
-import getUniqueEmpresaController from '../controller/empresa/getUniqueController.js';   
-import deleteEmpresaController from '../controller/empresa/deleteEmpresaController.js';
-import putEmpresaController from '../controller/empresa/putEmpresaController.js';
-import empresaDocumentosController from '../controller/empresa/empresaDocumentosController.js';
+import { authMiddleware } from '../middleware/authMiddleware';
+import createEmpresaController from '../controller/empresa/createEmpresaController';
+import getAllEmpresaController from '../controller/empresa/getAllEmpresaController';
+import getUniqueEmpresaController from '../controller/empresa/getUniqueController';   
+import deleteEmpresaController from '../controller/empresa/deleteEmpresaController';
+import putEmpresaController from '../controller/empresa/putEmpresaController';
+import empresaDocumentosController from '../controller/empresa/empresaDocumentosController';
 
 const router = Router();    
 

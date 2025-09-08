@@ -1,35 +1,38 @@
-import { createTool } from "@mastra/core/tools";
-import { z } from "zod";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.compareDocuments = void 0;
+const tools_1 = require("@mastra/core/tools");
+const zod_1 = require("zod");
 /**
  * Tool para comparar documentos da empresa com requisitos da licitação
  * Identifica gaps de documentação e status de adequação
  */
-export const compareDocuments = createTool({
+exports.compareDocuments = (0, tools_1.createTool)({
     id: "compareDocuments",
     description: "Compara documentos disponíveis da empresa com requisitos da licitação",
-    inputSchema: z.object({
-        empresaId: z.string().describe("ID da empresa para consulta de documentos"),
-        requiredDocuments: z.array(z.object({
-            tipo: z.string(),
-            descricao: z.string(),
-            validade_minima: z.string().optional()
+    inputSchema: zod_1.z.object({
+        empresaId: zod_1.z.string().describe("ID da empresa para consulta de documentos"),
+        requiredDocuments: zod_1.z.array(zod_1.z.object({
+            tipo: zod_1.z.string(),
+            descricao: zod_1.z.string(),
+            validade_minima: zod_1.z.string().optional()
         })).describe("Lista de documentos exigidos pela licitação"),
-        categoria: z.enum([
+        categoria: zod_1.z.enum([
             "juridica",
             "tecnica",
             "fiscal",
             "economica"
         ]).describe("Categoria de habilitação")
     }),
-    outputSchema: z.object({
-        success: z.boolean(),
-        empresaId: z.string().optional(),
-        categoria: z.string().optional(),
-        comparison: z.record(z.any()),
-        adequacaoPercentual: z.number(),
-        documentosFaltantes: z.array(z.any()).optional(),
-        documentosVencidos: z.array(z.any()).optional(),
-        message: z.string()
+    outputSchema: zod_1.z.object({
+        success: zod_1.z.boolean(),
+        empresaId: zod_1.z.string().optional(),
+        categoria: zod_1.z.string().optional(),
+        comparison: zod_1.z.record(zod_1.z.any()),
+        adequacaoPercentual: zod_1.z.number(),
+        documentosFaltantes: zod_1.z.array(zod_1.z.any()).optional(),
+        documentosVencidos: zod_1.z.array(zod_1.z.any()).optional(),
+        message: zod_1.z.string()
     }),
     execute: async ({ context }) => {
         try {

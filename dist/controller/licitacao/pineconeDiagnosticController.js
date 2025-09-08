@@ -1,5 +1,10 @@
-import LicitacaoPineconeService from '../../services/licitacao/licitacaoPineconeService';
-const pineconeDiagnosticService = new LicitacaoPineconeService();
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const licitacaoPineconeService_1 = __importDefault(require("../../services/licitacao/licitacaoPineconeService"));
+const pineconeDiagnosticService = new licitacaoPineconeService_1.default();
 const obterLicitacoesPorEstado = async (req, res) => {
     try {
         const { uf } = req.params;
@@ -73,7 +78,7 @@ const obterEstatisticasPinecone = async (req, res) => {
         });
     }
 };
-export default {
+exports.default = {
     obterEstatisticasPinecone,
     obterLicitacoesPorEstado
 };

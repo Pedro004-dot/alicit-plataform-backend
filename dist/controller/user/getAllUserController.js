@@ -1,7 +1,12 @@
-import getAllUserService from "../../services/user/getAllUserService";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const getAllUserService_js_1 = __importDefault(require("../../services/user/getAllUserService.js"));
 const getAllUser = async (req, res) => {
     try {
-        const getAllUser = await getAllUserService.getAllUser();
+        const getAllUser = await getAllUserService_js_1.default.getAllUser();
         res.status(201).json(getAllUser);
         return getAllUser;
     }
@@ -10,4 +15,4 @@ const getAllUser = async (req, res) => {
         res.status(500).json({ error: "Erro ao buscar users" });
     }
 };
-export default { getAllUser };
+exports.default = { getAllUser };

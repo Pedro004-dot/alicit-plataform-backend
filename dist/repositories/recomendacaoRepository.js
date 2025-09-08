@@ -1,12 +1,17 @@
-import { supabase } from '../config/supabase';
-import pineconeLicitacaoRepository from './pineconeLicitacaoRepository';
-import LicitacaoDecisaoRepository from './licitacaoDecisaoRepository';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const supabase_1 = require("../config/supabase");
+const pineconeLicitacaoRepository_1 = __importDefault(require("./pineconeLicitacaoRepository"));
+const licitacaoDecisaoRepository_1 = __importDefault(require("./licitacaoDecisaoRepository"));
 class RecomendacaoRepository {
     async salvarRecomendacoes(recomendacoes) {
         console.log(`🔍 Verificando ${recomendacoes.length} licitações no Supabase...`);
         // 1. Verificar quais licitações existem no Supabase
         const numerosPNCP = recomendacoes.map(rec => rec.numeroControlePNCP);
-        const { data: licitacoesExistentes, error: verificarError } = await supabase
+        const { data: licitacoesExistentes, error: verificarError } = await supabase_1.supabase
             .from('licitacoes')
             .select('numero_controle_pncp')
             .in('numero_controle_pncp', numerosPNCP);
@@ -19,11 +24,11 @@ class RecomendacaoRepository {
         // 3. Criar licitações faltantes usando o método existente
         if (licitacoesFaltantes.length > 0) {
             console.log(`🔄 Sincronizando ${licitacoesFaltantes.length} licitações do Pinecone para Supabase...`);
-            const licitacaoDecisaoRepo = LicitacaoDecisaoRepository;
+            const licitacaoDecisaoRepo = licitacaoDecisaoRepository_1.default;
             for (const numeroPNCP of licitacoesFaltantes) {
                 try {
                     // Buscar do Pinecone
-                    const licitacaoPinecone = await pineconeLicitacaoRepository.getLicitacao(numeroPNCP);
+                    const licitacaoPinecone = await pineconeLicitacaoRepository_1.default.getLicitacao(numeroPNCP);
                     if (licitacaoPinecone) {
                         // Salvar no Supabase usando método existente
                         await licitacaoDecisaoRepo.salvarLicitacaoCompleta(licitacaoPinecone);
@@ -49,7 +54,7 @@ class RecomendacaoRepository {
             data_matching: new Date().toISOString(),
             detalhes_matching: rec.detalhesMatching
         }));
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacoes_empresa')
             .upsert(recomendacoesFormatadas, {
             onConflict: 'numero_controle_pncp,empresa_cnpj',
@@ -64,7 +69,7 @@ class RecomendacaoRepository {
     }
     async listarRecomendacoesPendentes(empresaCnpj) {
         // Usar CNPJ com formatação original
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacoes_empresa')
             .select(`
         *,
@@ -107,7 +112,7 @@ class RecomendacaoRepository {
     }
     async removerRecomendacao(numeroControlePNCP, empresaCnpj) {
         // Usar CNPJ com formatação original
-        const { error } = await supabase
+        const { error } = await supabase_1.supabase
             .from('licitacoes_empresa')
             .delete()
             .eq('numero_controle_pncp', numeroControlePNCP)
@@ -120,7 +125,7 @@ class RecomendacaoRepository {
     async limparRecomendacoesAntigas(diasParaExpirar) {
         const dataLimite = new Date();
         dataLimite.setDate(dataLimite.getDate() - diasParaExpirar);
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacoes_empresa')
             .delete()
             .eq('origem_recomendacao', true)
@@ -134,7 +139,7 @@ class RecomendacaoRepository {
     }
     async verificarRecomendacaoExistente(numeroControlePNCP, empresaCnpj) {
         // Usar CNPJ com formatação original
-        const { data, error } = await supabase
+        const { data, error } = await supabase_1.supabase
             .from('licitacoes_empresa')
             .select('*')
             .eq('numero_controle_pncp', numeroControlePNCP)
@@ -147,4 +152,4 @@ class RecomendacaoRepository {
         return data;
     }
 }
-export default new RecomendacaoRepository();
+exports.default = new RecomendacaoRepository();

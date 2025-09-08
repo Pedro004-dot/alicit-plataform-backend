@@ -1,22 +1,25 @@
-import { createTool } from "@mastra/core/tools";
-import { z } from "zod";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateWorkingMemory = void 0;
+const tools_1 = require("@mastra/core/tools");
+const zod_1 = require("zod");
 /**
  * Tool para atualizar working memory com resultados da análise
  * Permite que agentes atualizem o estado global progressivamente
  */
-export const updateWorkingMemory = createTool({
+exports.updateWorkingMemory = (0, tools_1.createTool)({
     id: "updateWorkingMemory",
     description: "Atualiza a working memory com resultados da análise atual",
-    inputSchema: z.object({
-        section: z.string().describe("Seção a ser atualizada (ex: 'Agente Aderência')"),
-        content: z.string().describe("Conteúdo da atualização"),
-        score: z.number().min(0).max(100).optional().describe("Score da análise (0-100)"),
-        status: z.enum(["Pendente", "Em Análise", "Concluído", "Rejeitado"]).describe("Status da análise")
+    inputSchema: zod_1.z.object({
+        section: zod_1.z.string().describe("Seção a ser atualizada (ex: 'Agente Aderência')"),
+        content: zod_1.z.string().describe("Conteúdo da atualização"),
+        score: zod_1.z.number().min(0).max(100).optional().describe("Score da análise (0-100)"),
+        status: zod_1.z.enum(["Pendente", "Em Análise", "Concluído", "Rejeitado"]).describe("Status da análise")
     }),
-    outputSchema: z.object({
-        success: z.boolean(),
-        message: z.string(),
-        updatedSection: z.string()
+    outputSchema: zod_1.z.object({
+        success: zod_1.z.boolean(),
+        message: zod_1.z.string(),
+        updatedSection: zod_1.z.string()
     }),
     execute: async ({ context }) => {
         try {

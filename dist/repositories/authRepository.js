@@ -1,13 +1,16 @@
-import { createClient } from '@supabase/supabase-js';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getUserEmpresas = exports.findUserByEmail = void 0;
+const supabase_js_1 = require("@supabase/supabase-js");
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey, {
+const supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseKey, {
     auth: {
         autoRefreshToken: false,
         persistSession: false
     }
 });
-export const findUserByEmail = async (email) => {
+const findUserByEmail = async (email) => {
     const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -18,7 +21,8 @@ export const findUserByEmail = async (email) => {
         return null;
     return data;
 };
-export const getUserEmpresas = async (userId) => {
+exports.findUserByEmail = findUserByEmail;
+const getUserEmpresas = async (userId) => {
     const { data, error } = await supabase
         .from('user_empresa')
         .select(`
@@ -37,3 +41,4 @@ export const getUserEmpresas = async (userId) => {
         cnpj: item.empresas.cnpj
     }));
 };
+exports.getUserEmpresas = getUserEmpresas;

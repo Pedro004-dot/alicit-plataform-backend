@@ -1,11 +1,16 @@
-import deleteUserService from "../../services/user/deleteUserService";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const deleteUserService_js_1 = __importDefault(require("../../services/user/deleteUserService.js"));
 const deleteUser = async (req, res) => {
     try {
         const { id } = req.body;
         if (!id) {
             return res.status(400).json({ error: "ID não informado" });
         }
-        const deleteUser = await deleteUserService.deleteUser(id);
+        const deleteUser = await deleteUserService_js_1.default.deleteUser(id);
         res.status(201).json(deleteUser);
         return deleteUser;
     }
@@ -14,4 +19,4 @@ const deleteUser = async (req, res) => {
         res.status(500).json({ error: "Erro ao deletar user" });
     }
 };
-export default { deleteUser };
+exports.default = { deleteUser };

@@ -1,12 +1,17 @@
-import licitacaoEmpresaService from "../../services/licitacao/licitacaoEmpresaService";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const licitacaoEmpresaService_1 = __importDefault(require("../../services/licitacao/licitacaoEmpresaService"));
 const criar = async (req, res) => {
     try {
         const { cnpjEmpresa, numeroControlePNCP, status } = req.body;
         // Usar buscarOuCriar para evitar duplicatas
-        let licitacao = await licitacaoEmpresaService.buscarOuCriar(numeroControlePNCP, cnpjEmpresa);
+        let licitacao = await licitacaoEmpresaService_1.default.buscarOuCriar(numeroControlePNCP, cnpjEmpresa);
         // Se foi fornecido um status, atualizar
         if (status && status !== licitacao.status) {
-            licitacao = await licitacaoEmpresaService.atualizarStatusPorChaves(numeroControlePNCP, cnpjEmpresa, status);
+            licitacao = await licitacaoEmpresaService_1.default.atualizarStatusPorChaves(numeroControlePNCP, cnpjEmpresa, status);
         }
         res.status(201).json(licitacao);
     }
@@ -19,7 +24,7 @@ const atualizarStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-        const licitacao = await licitacaoEmpresaService.atualizarStatus(Number(id), status);
+        const licitacao = await licitacaoEmpresaService_1.default.atualizarStatus(Number(id), status);
         res.status(200).json(licitacao);
     }
     catch (error) {
@@ -30,7 +35,7 @@ const atualizarStatus = async (req, res) => {
 const listarTodas = async (req, res) => {
     try {
         const { cnpj } = req.params;
-        const licitacoes = await licitacaoEmpresaService.listarPorEmpresa(cnpj);
+        const licitacoes = await licitacaoEmpresaService_1.default.listarPorEmpresa(cnpj);
         res.status(200).json(licitacoes);
     }
     catch (error) {
@@ -41,7 +46,7 @@ const listarTodas = async (req, res) => {
 const buscarUma = async (req, res) => {
     try {
         const { id } = req.params;
-        const licitacao = await licitacaoEmpresaService.buscarPorId(Number(id));
+        const licitacao = await licitacaoEmpresaService_1.default.buscarPorId(Number(id));
         res.status(200).json(licitacao);
     }
     catch (error) {
@@ -52,7 +57,7 @@ const buscarUma = async (req, res) => {
 const atualizarStatusPorChaves = async (req, res) => {
     try {
         const { numeroControlePNCP, empresaCnpj, status } = req.body;
-        const resultado = await licitacaoEmpresaService.atualizarStatusPorChaves(numeroControlePNCP, empresaCnpj, status);
+        const resultado = await licitacaoEmpresaService_1.default.atualizarStatusPorChaves(numeroControlePNCP, empresaCnpj, status);
         res.status(200).json(resultado);
     }
     catch (error) {
@@ -63,7 +68,7 @@ const atualizarStatusPorChaves = async (req, res) => {
 const deletar = async (req, res) => {
     try {
         const { id } = req.params;
-        await licitacaoEmpresaService.deletar(Number(id));
+        await licitacaoEmpresaService_1.default.deletar(Number(id));
         res.status(204).send();
     }
     catch (error) {
@@ -71,4 +76,4 @@ const deletar = async (req, res) => {
         res.status(500).json({ error: "Erro ao deletar licitacao" });
     }
 };
-export default { criar, atualizarStatus, atualizarStatusPorChaves, listarTodas, buscarUma, deletar };
+exports.default = { criar, atualizarStatus, atualizarStatusPorChaves, listarTodas, buscarUma, deletar };

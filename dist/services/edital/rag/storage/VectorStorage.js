@@ -1,11 +1,17 @@
-import { createClient } from 'redis';
-import OpenAI from 'openai';
-export class VectorStorage {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.VectorStorage = void 0;
+const redis_1 = require("redis");
+const openai_1 = __importDefault(require("openai"));
+class VectorStorage {
     constructor(redisUrl = 'redis://localhost:6379') {
         this.TTL_SEMANA = 7 * 24 * 60 * 60; // 7 dias em segundos
         this.vectorStore = new Map(); // Cache in-memory
-        this.redisClient = createClient({ url: redisUrl });
-        this.openaiClient = new OpenAI({
+        this.redisClient = (0, redis_1.createClient)({ url: redisUrl });
+        this.openaiClient = new openai_1.default({
             apiKey: process.env.OPENAI_API_KEY,
         });
     }
@@ -194,3 +200,4 @@ export class VectorStorage {
         }
     }
 }
+exports.VectorStorage = VectorStorage;

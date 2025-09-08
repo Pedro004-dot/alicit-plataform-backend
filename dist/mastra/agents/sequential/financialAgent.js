@@ -1,13 +1,16 @@
-import { Agent } from "@mastra/core/agent";
-import { openai } from "@ai-sdk/openai";
-import { sequentialWorkflowMemory } from "../../config/memoryConfig";
-import { pineconeLicitacao, extractDadosFinanceirosLicitacao, updateWorkingMemory, extractFinancialData, supabaseEmpresa } from "../../tools";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.financialAgent = void 0;
+const agent_1 = require("@mastra/core/agent");
+const openai_1 = require("@ai-sdk/openai");
+const memoryConfig_1 = require("../../config/memoryConfig");
+const tools_1 = require("../../tools");
 /**
  * Agente 4: Análise Financeira
  * Especialidade: Atratividade econômica da licitação
  * Quarta e última etapa do workflow sequencial
  */
-export const financialAgent = new Agent({
+exports.financialAgent = new agent_1.Agent({
     name: "FinancialAgent",
     description: "Analisa atratividade econômico-financeira da licitação",
     instructions: `
@@ -157,13 +160,13 @@ Você é o quarto e último agente no workflow sequencial. Sua função é avali
 - Avalie risco de inadimplência do órgão público
 - Sempre atualize working memory com análise completa
 `,
-    model: openai("gpt-4o"),
-    memory: sequentialWorkflowMemory,
+    model: (0, openai_1.openai)("gpt-4o"),
+    memory: memoryConfig_1.sequentialWorkflowMemory,
     tools: {
-        pineconeLicitacao,
-        extractDadosFinanceirosLicitacao,
-        updateWorkingMemory,
-        extractFinancialData,
-        supabaseEmpresa
+        pineconeLicitacao: tools_1.pineconeLicitacao,
+        extractDadosFinanceirosLicitacao: tools_1.extractDadosFinanceirosLicitacao,
+        updateWorkingMemory: tools_1.updateWorkingMemory,
+        extractFinancialData: tools_1.extractFinancialData,
+        supabaseEmpresa: tools_1.supabaseEmpresa
     },
 });

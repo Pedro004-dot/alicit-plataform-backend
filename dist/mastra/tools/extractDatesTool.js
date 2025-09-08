@@ -1,21 +1,24 @@
-import { createTool } from "@mastra/core/tools";
-import { z } from "zod";
-export const extractDatesFromText = createTool({
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.extractDatesFromText = void 0;
+const tools_1 = require("@mastra/core/tools");
+const zod_1 = require("zod");
+exports.extractDatesFromText = (0, tools_1.createTool)({
     id: "extractDatesFromText",
     description: "Extrai todas as datas mencionadas no texto com contexto e classificação de importância",
-    inputSchema: z.object({
-        text: z.string().describe("Texto para extrair datas"),
-        licitacaoId: z.string().optional().describe("ID da licitação para contexto"),
+    inputSchema: zod_1.z.object({
+        text: zod_1.z.string().describe("Texto para extrair datas"),
+        licitacaoId: zod_1.z.string().optional().describe("ID da licitação para contexto"),
     }),
-    outputSchema: z.object({
-        dates: z.array(z.object({
-            date: z.string().describe("Data encontrada (formato YYYY-MM-DD)"),
-            originalText: z.string().describe("Texto original onde a data foi encontrada"),
-            context: z.string().describe("Contexto da data (abertura, entrega, etc.)"),
-            importance: z.enum(["critical", "high", "medium", "low"]).describe("Nível de importância"),
-            daysFromNow: z.number().describe("Dias a partir de hoje (negativo se já passou)"),
+    outputSchema: zod_1.z.object({
+        dates: zod_1.z.array(zod_1.z.object({
+            date: zod_1.z.string().describe("Data encontrada (formato YYYY-MM-DD)"),
+            originalText: zod_1.z.string().describe("Texto original onde a data foi encontrada"),
+            context: zod_1.z.string().describe("Contexto da data (abertura, entrega, etc.)"),
+            importance: zod_1.z.enum(["critical", "high", "medium", "low"]).describe("Nível de importância"),
+            daysFromNow: zod_1.z.number().describe("Dias a partir de hoje (negativo se já passou)"),
         })),
-        totalDatesFound: z.number().describe("Total de datas encontradas"),
+        totalDatesFound: zod_1.z.number().describe("Total de datas encontradas"),
     }),
     execute: async ({ context }) => {
         try {

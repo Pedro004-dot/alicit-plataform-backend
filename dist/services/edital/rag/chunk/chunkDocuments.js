@@ -1,7 +1,10 @@
-import { HierarchicalChunker } from "../../../../repositories/RAG/chunk/HierarchicalChunker";
-export async function chunkDocuments(documents) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.chunkDocuments = chunkDocuments;
+const HierarchicalChunker_1 = require("../../../../repositories/RAG/chunk/HierarchicalChunker");
+async function chunkDocuments(documents) {
     const allChunks = [];
-    const hierarchicalChunker = new HierarchicalChunker();
+    const hierarchicalChunker = new HierarchicalChunker_1.HierarchicalChunker();
     for (const document of documents) {
         console.log(`🔧 Processando documento ${document.licitacaoId}-${document.documentIndex} com chunking hierárquico...`);
         try {
