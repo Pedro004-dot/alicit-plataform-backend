@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.strategicFitAgent = void 0;
 const agent_1 = require("@mastra/core/agent");
 const openai_1 = require("@ai-sdk/openai");
-const memoryConfig_1 = require("../../config/memoryConfig");
+// import { sequentialWorkflowMemory } from "../../config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
 const tools_1 = require("../../tools");
 /**
  * Agente 1: Análise de Aderência Estratégica
@@ -86,7 +86,7 @@ Você é o primeiro agente no workflow sequencial de análise de licitações da
 - Foque na compatibilidade estratégica, não em detalhes operacionais
 `,
     model: (0, openai_1.openai)("gpt-4o"),
-    memory: memoryConfig_1.sequentialWorkflowMemory,
+    // Memory removido para compatibilidade Vercel serverless
     tools: {
         pineconeLicitacao: tools_1.pineconeLicitacao,
         extractObjetoLicitacao: tools_1.extractObjetoLicitacao,

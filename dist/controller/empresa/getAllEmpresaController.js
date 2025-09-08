@@ -3,10 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const getAllEmpresaService_js_1 = __importDefault(require("../../services/empresa/getAllEmpresaService.js"));
+const getAllEmpresaService_1 = __importDefault(require("../../services/empresa/getAllEmpresaService"));
 const getAllEmpresa = async (req, res) => {
     try {
-        const getAllEmpresa = await getAllEmpresaService_js_1.default.getAllEmpresa();
+        const getAllEmpresa = await getAllEmpresaService_1.default.getAllEmpresa();
         res.status(201).json(getAllEmpresa);
         return getAllEmpresa;
     }

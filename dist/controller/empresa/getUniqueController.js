@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const getUniqueEmpresaService_js_1 = __importDefault(require("../../services/empresa/getUniqueEmpresaService.js"));
+const getUniqueEmpresaService_1 = __importDefault(require("../../services/empresa/getUniqueEmpresaService"));
 const getUniqueEmpresa = async (req, res) => {
     try {
         const { cnpj } = req.params;
@@ -11,7 +11,7 @@ const getUniqueEmpresa = async (req, res) => {
             return res.status(400).json({ error: "CNPJ não informado" });
         }
         const decodedCnpj = decodeURIComponent(cnpj);
-        const getUniqueEmpresa = await getUniqueEmpresaService_js_1.default.getUniqueEmpresa(decodedCnpj);
+        const getUniqueEmpresa = await getUniqueEmpresaService_1.default.getUniqueEmpresa(decodedCnpj);
         return res.status(200).json(getUniqueEmpresa);
     }
     catch (error) {

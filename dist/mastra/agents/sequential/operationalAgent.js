@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.operationalAgent = void 0;
 const agent_1 = require("@mastra/core/agent");
 const openai_1 = require("@ai-sdk/openai");
-const memoryConfig_1 = require("../../config/memoryConfig");
+// import { sequentialWorkflowMemory } from "../../config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
 const tools_1 = require("../../tools");
 /**
  * Agente 2: Análise Operacional
@@ -103,7 +103,7 @@ Você é o segundo agente no workflow sequencial. Sua função é avaliar se a e
 - Sempre atualize working memory com resultado detalhado
 `,
     model: (0, openai_1.openai)("gpt-4o"),
-    memory: memoryConfig_1.sequentialWorkflowMemory,
+    // Memory removido para compatibilidade Vercel serverless
     tools: {
         pineconeLicitacao: tools_1.pineconeLicitacao,
         updateWorkingMemory: tools_1.updateWorkingMemory,

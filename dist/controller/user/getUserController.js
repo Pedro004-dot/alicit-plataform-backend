@@ -3,14 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const getUserService_js_1 = __importDefault(require("../../services/user/getUserService.js"));
+const getUserService_1 = __importDefault(require("../../services/user/getUserService"));
 const getUser = async (req, res) => {
     try {
         const { id } = req.body;
         if (!id) {
             return res.status(400).json({ error: "ID não informado" });
         }
-        const getUser = await getUserService_js_1.default.getUser(id);
+        const getUser = await getUserService_1.default.getUser(id);
         res.status(201).json(getUser);
         return getUser;
     }

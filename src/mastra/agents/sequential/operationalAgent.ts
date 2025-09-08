@@ -1,6 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
-import { sequentialWorkflowMemory } from "../../config/memoryConfig";
+// import { sequentialWorkflowMemory } from "../../config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
 import { 
   pineconeLicitacao,
   updateWorkingMemory,
@@ -107,7 +107,7 @@ Você é o segundo agente no workflow sequencial. Sua função é avaliar se a e
 - Sempre atualize working memory com resultado detalhado
 `,
   model: openai("gpt-4o"),
-  memory: sequentialWorkflowMemory,
+  // Memory removido para compatibilidade Vercel serverless
   tools: {
     pineconeLicitacao,
     updateWorkingMemory,

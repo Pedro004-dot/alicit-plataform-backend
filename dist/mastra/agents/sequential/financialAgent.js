@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.financialAgent = void 0;
 const agent_1 = require("@mastra/core/agent");
 const openai_1 = require("@ai-sdk/openai");
-const memoryConfig_1 = require("../../config/memoryConfig");
+// import { sequentialWorkflowMemory } from "../../config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
 const tools_1 = require("../../tools");
 /**
  * Agente 4: Análise Financeira
@@ -161,7 +161,7 @@ Você é o quarto e último agente no workflow sequencial. Sua função é avali
 - Sempre atualize working memory com análise completa
 `,
     model: (0, openai_1.openai)("gpt-4o"),
-    memory: memoryConfig_1.sequentialWorkflowMemory,
+    // Memory removido para compatibilidade Vercel serverless
     tools: {
         pineconeLicitacao: tools_1.pineconeLicitacao,
         extractDadosFinanceirosLicitacao: tools_1.extractDadosFinanceirosLicitacao,

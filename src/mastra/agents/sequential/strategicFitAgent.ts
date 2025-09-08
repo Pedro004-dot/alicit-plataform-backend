@@ -1,6 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
-import { sequentialWorkflowMemory } from "../../config/memoryConfig";
+// import { sequentialWorkflowMemory } from "../../config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
 import { 
   pineconeLicitacao,
   extractObjetoLicitacao,
@@ -89,7 +89,7 @@ Você é o primeiro agente no workflow sequencial de análise de licitações da
 - Foque na compatibilidade estratégica, não em detalhes operacionais
 `,
   model: openai("gpt-4o"),
-  memory: sequentialWorkflowMemory,
+  // Memory removido para compatibilidade Vercel serverless
   tools: {
     pineconeLicitacao,
     extractObjetoLicitacao, 

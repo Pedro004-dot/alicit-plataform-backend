@@ -1,15 +1,13 @@
 import { Mastra } from "@mastra/core/mastra";
-import { VercelDeployer } from "@mastra/deployer-vercel";
 
 // Importar arquitetura sequencial limpa
 import { sequentialAgents } from "./agents/sequential";
 import { sequentialAnalysisWorkflow } from "./workflows/sequentialAnalysisWorkflowSimplified";
-import { sequentialWorkflowMemory } from "./config/memoryConfig";
 
 /**
  * Instância principal do Mastra com arquitetura sequencial
  * Sistema otimizado para análise progressiva de licitações
- * Com Vercel Deployer oficial
+ * Configuração otimizada para Vercel serverless (sem storage persistente)
  */
 export const mastra = new Mastra({
   agents: {
@@ -18,10 +16,7 @@ export const mastra = new Mastra({
   workflows: {
     sequentialAnalysisWorkflow,
   },
-  // Vercel Deployer oficial (opcional)
-  ...(process.env.VERCEL_TOKEN ? {
-    deployer: new VercelDeployer()
-  } : {}),
+  // SEM STORAGE para compatibilidade com Vercel serverless
 });
 
 // Re-exportar componentes principais para facilitar uso
