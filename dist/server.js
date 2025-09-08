@@ -17,7 +17,7 @@ const pineconeRepository_1 = require("./repositories/pineconeRepository");
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 3002;
+const PORT = parseInt(process.env.PORT || '3002', 10);
 app.use((0, cors_1.default)({
     origin: 'http://localhost:3000',
     credentials: true
@@ -78,12 +78,12 @@ const initApp = async () => {
     await initializePinecone();
     return app;
 };
-// Para desenvolvimento local
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, async () => {
-        console.log(`Servidor rodando na porta ${PORT}`);
-        await initializePinecone();
-    });
-}
+// Iniciar servidor sempre (Railway, desenvolvimento, etc)
+app.listen(PORT, async () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔗 URL: http://localhost:${PORT}`);
+    await initializePinecone();
+});
 // Para Vercel - export default
 exports.default = app;

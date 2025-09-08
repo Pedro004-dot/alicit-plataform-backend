@@ -15,7 +15,7 @@ import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = parseInt(process.env.PORT || '3002', 10);
 
 app.use(cors({
   origin: 'http://localhost:3000',
@@ -82,13 +82,13 @@ const initApp = async () => {
   return app;
 };
 
-// Para desenvolvimento local
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, async () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-    await initializePinecone();
-  });
-}
+// Iniciar servidor sempre (Railway, desenvolvimento, etc)
+app.listen(PORT, async () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 URL: http://localhost:${PORT}`);
+  await initializePinecone();
+});
 
 // Para Vercel - export default
 export default app;
