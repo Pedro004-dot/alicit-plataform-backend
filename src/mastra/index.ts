@@ -1,5 +1,5 @@
 import { Mastra } from "@mastra/core/mastra";
-import { PostgresStore } from "@mastra/pg";
+import { VercelDeployer } from "@mastra/deployer-vercel";
 
 // Importar arquitetura sequencial limpa
 import { sequentialAgents } from "./agents/sequential";
@@ -9,7 +9,7 @@ import { sequentialWorkflowMemory } from "./config/memoryConfig";
 /**
  * Instância principal do Mastra com arquitetura sequencial
  * Sistema otimizado para análise progressiva de licitações
- * Com PostgreSQL storage oficial do Mastra
+ * Com Vercel Deployer oficial
  */
 export const mastra = new Mastra({
   agents: {
@@ -18,12 +18,10 @@ export const mastra = new Mastra({
   workflows: {
     sequentialAnalysisWorkflow,
   },
-  // PostgreSQL storage oficial do Mastra
-  ...(process.env.DATABASE_URL ? {
-    storage: new PostgresStore({
-      connectionString: process.env.DATABASE_URL,
-    })
-  } : {})
+  // Vercel Deployer oficial (opcional)
+  ...(process.env.VERCEL_TOKEN ? {
+    deployer: new VercelDeployer()
+  } : {}),
 });
 
 // Re-exportar componentes principais para facilitar uso

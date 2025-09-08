@@ -1,62 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sequentialWorkflowMemory = void 0;
-const memory_1 = require("@mastra/memory");
-const pg_1 = require("@mastra/pg");
-const openai_1 = require("@ai-sdk/openai");
-// Processadores comentados temporariamente por erro de importação
-// import { TokenLimiter, ToolCallFilter } from "@mastra/memory/processors";
 /**
- * Configuração de memória otimizada para workflow sequencial
- * - Working Memory: Estado global da análise + contexto empresarial
- * - Thread Management: 1 thread por licitação com títulos automáticos
- * - Semantic Recall: Desabilitado (usaremos Pinecone diretamente nos tools)
- * - PostgreSQL storage para produção
+ * Configuração de memória simplificada para Vercel
+ * - Sem Memory instance para reduzir bundle size
+ * - Usaremos contexto direto nos agentes
  */
-exports.sequentialWorkflowMemory = new memory_1.Memory({
-    // PostgreSQL storage para produção, fallback para desenvolvimento sem DB
-    ...(process.env.DATABASE_URL ? {
-        storage: new pg_1.PostgresStore({
-            connectionString: process.env.DATABASE_URL,
-        })
-    } : {}),
-    // Vector store desabilitado temporariamente por incompatibilidade de tipos
-    // TODO: Aguardar atualização de compatibilidade entre @mastra/core e @mastra/pinecone
-    // vector: new PineconeVector({
-    //   apiKey: process.env.PINECONE_API_KEY || "",
-    //   environment: process.env.PINECONE_ENVIRONMENT || "us-east-1-aws",
-    // }),
-    // Modelo de embedding
-    embedder: openai_1.openai.embedding("text-embedding-3-small"),
-    options: {
-        // Contexto mínimo para performance
-        lastMessages: 5,
-        // Semantic recall desabilitado temporariamente (sem vector store)
-        // semanticRecall: {
-        //   topK: 3,
-        //   messageRange: 2,
-        //   scope: 'resource',
-        // },
-        // Working memory como estado global
-        workingMemory: {
-            enabled: true,
-            scope: 'resource',
-            template: getWorkingMemoryTemplate(),
-        },
-        // Títulos automáticos para organização
-        threads: {
-            generateTitle: {
-                model: (0, openai_1.openai)("gpt-4o-mini"),
-                instructions: "Gere um título conciso para esta análise de licitação baseado no objeto e órgão licitante."
-            }
-        },
-        // Processadores comentados temporariamente
-        // processors: [
-        //   new ToolCallFilter({ exclude: ["queryEditalTool"] }),
-        //   new TokenLimiter(120000),
-        // ]
-    }
-});
+// Configuração simplificada para Vercel - sem Memory instance
+exports.sequentialWorkflowMemory = undefined;
 /**
  * Template da working memory para contexto empresarial e análise progressiva
  */
