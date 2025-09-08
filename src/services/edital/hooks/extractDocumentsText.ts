@@ -9,7 +9,7 @@
 //     const simulatedText = `Documento simulado para empresa ${request.empresaId} na licitação ${request.licitacaoId}`;
 //     texts.push(simulatedText);
 //     return texts;
-//   }
+//   }fffeee
 
 //   // Usar o PDFProcessorAdapter para extrair texto real dos documentos
 //   const pdfProcessor = new PDFProcessorAdapter();
