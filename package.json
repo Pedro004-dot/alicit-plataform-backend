@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "postbuild": "cp -r src/public dist/ 2>/dev/null || true",
-    "vercel-build": "npm run build && npm prune --production",
+    "vercel-build": "npm run build",
     "load-municipios": "ts-node src/scripts/loadMunicipios.ts",
     "test-municipios": "ts-node src/scripts/testMunicipios.ts",
     "view-municipios": "ts-node src/scripts/viewMunicipios.ts",

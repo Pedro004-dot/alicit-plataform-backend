@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "installCommand": "npm install --omit=dev",
+  "buildCommand": "npm run build",
   "builds": [
     {
       "src": "index.mjs",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["**"]
+        "includeFiles": ["dist/**"]
       }
     }
   ],
