@@ -15,7 +15,7 @@ import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
 
 const app = express();
-const PORT = 3002;
+const PORT = process.env.PORT || 3002;
 
 app.use(cors({
   origin: 'http://localhost:3000',

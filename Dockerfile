@@ -18,8 +18,8 @@ COPY . .
 # Compilar TypeScript para JavaScript
 RUN npm run build
 
-# Expor a porta da aplicação (3002 conforme seu server.ts)
-EXPOSE 3002
+# Expor a porta da aplicação (Railway usa PORT env var)
+EXPOSE ${PORT:-3002}
 
 # Definir variável de ambiente para produção
 ENV NODE_ENV=production

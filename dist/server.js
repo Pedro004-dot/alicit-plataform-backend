@@ -17,7 +17,7 @@ const pineconeRepository_1 = require("./repositories/pineconeRepository");
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const app = (0, express_1.default)();
-const PORT = 3002;
+const PORT = process.env.PORT || 3002;
 app.use((0, cors_1.default)({
     origin: 'http://localhost:3000',
     credentials: true
