@@ -6,6 +6,7 @@
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "postbuild": "cp -r src/public dist/ 2>/dev/null || true",
     "load-municipios": "ts-node src/scripts/loadMunicipios.ts",
     "test-municipios": "ts-node src/scripts/testMunicipios.ts",
     "view-municipios": "ts-node src/scripts/viewMunicipios.ts",

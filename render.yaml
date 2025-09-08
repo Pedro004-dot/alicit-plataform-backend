@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: alicit-backend
+    runtime: node
+    plan: starter  # ou starter plus, professional, etc
+    region: ohio  # ou virginia, oregon, etc
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false  # será configurado no dashboard do Render
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_INDEX_NAME
+        value: alicit-editais
+      - key: PINECONE_ENVIRONMENT
+        value: us-east-1-aws
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+    autoDeploy: true
+    branch: main  # ou sua branch principal
