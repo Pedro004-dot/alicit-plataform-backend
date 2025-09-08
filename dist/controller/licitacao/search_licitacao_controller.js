@@ -1,13 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const searchLicitacaoService_1 = __importDefault(require("../../services/licitacao/searchLicitacaoService"));
+import searchLicitacaoService from "../../services/licitacao/searchLicitacaoService";
 const searchLicitacao = async (req, res) => {
     try {
         const { palavraChave, tipoLicitacao, dataInicio, dataFim, valorMinimo, valorMaximo, fonte } = req.body;
-        const search = await searchLicitacaoService_1.default.searchLicitacao({ palavraChave, tipoLicitacao, dataInicio, dataFim, valorMinimo, valorMaximo, fonte });
+        const search = await searchLicitacaoService.searchLicitacao({ palavraChave, tipoLicitacao, dataInicio, dataFim, valorMinimo, valorMaximo, fonte });
         res.status(201).json(search);
         return search;
     }
@@ -16,4 +11,4 @@ const searchLicitacao = async (req, res) => {
         res.status(500).json({ error: "Erro ao buscar licitação" });
     }
 };
-exports.default = { searchLicitacao };
+export default { searchLicitacao };

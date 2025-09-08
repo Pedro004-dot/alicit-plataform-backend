@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.HierarchicalChunker = void 0;
-class HierarchicalChunker {
+export class HierarchicalChunker {
     constructor() {
         this.HIERARCHY_PATTERNS = [
             // Padrões numericos principais: 1., 1.1., 1.1.1
@@ -215,4 +212,3 @@ class HierarchicalChunker {
         bufferMetadata.originalSize = 0;
     }
 }
-exports.HierarchicalChunker = HierarchicalChunker;

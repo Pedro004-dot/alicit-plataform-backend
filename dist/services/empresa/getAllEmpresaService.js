@@ -1,11 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const empresaRepository_1 = __importDefault(require("../../repositories/empresaRepository"));
+import empresaRepository from '../../repositories/empresaRepository';
 const getAllEmpresa = async () => {
-    const empresas = await empresaRepository_1.default.getAllEmpresas();
+    const empresas = await empresaRepository.getAllEmpresas();
     return empresas;
 };
-exports.default = { getAllEmpresa };
+export default { getAllEmpresa };

@@ -1,9 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const supabase_js_1 = require("@supabase/supabase-js");
+import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey);
 const criar = async (data) => {
     const { data: result, error } = await supabase
         .from('licitacoes_empresa')
@@ -125,7 +123,7 @@ const deletar = async (id) => {
         throw new Error(`Erro ao deletar licitacao: ${error.message}`);
     }
 };
-exports.default = {
+export default {
     criar,
     atualizarStatus,
     listarPorEmpresa,

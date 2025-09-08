@@ -1,24 +1,21 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrentDate = void 0;
-const tools_1 = require("@mastra/core/tools");
-const zod_1 = require("zod");
-exports.getCurrentDate = (0, tools_1.createTool)({
+import { createTool } from "@mastra/core/tools";
+import { z } from "zod";
+export const getCurrentDate = createTool({
     id: "getCurrentDate",
     description: "Retorna a data e hora atual com informações contextuais para análise de prazos",
-    inputSchema: zod_1.z.object({
-        includeTime: zod_1.z.boolean().optional().default(true).describe("Incluir horário na resposta"),
-        timezone: zod_1.z.string().optional().default("America/Sao_Paulo").describe("Timezone para a data"),
+    inputSchema: z.object({
+        includeTime: z.boolean().optional().default(true).describe("Incluir horário na resposta"),
+        timezone: z.string().optional().default("America/Sao_Paulo").describe("Timezone para a data"),
     }),
-    outputSchema: zod_1.z.object({
-        currentDate: zod_1.z.string().describe("Data atual no formato YYYY-MM-DD"),
-        currentDateTime: zod_1.z.string().describe("Data e hora atual no formato ISO"),
-        brazilianDate: zod_1.z.string().describe("Data no formato brasileiro DD/MM/AAAA"),
-        brazilianDateTime: zod_1.z.string().describe("Data e hora no formato brasileiro"),
-        weekday: zod_1.z.string().describe("Dia da semana"),
-        isBusinessDay: zod_1.z.boolean().describe("Se é dia útil (segunda a sexta)"),
-        dayOfYear: zod_1.z.number().describe("Dia do ano (1-365/366)"),
-        weekOfYear: zod_1.z.number().describe("Semana do ano"),
+    outputSchema: z.object({
+        currentDate: z.string().describe("Data atual no formato YYYY-MM-DD"),
+        currentDateTime: z.string().describe("Data e hora atual no formato ISO"),
+        brazilianDate: z.string().describe("Data no formato brasileiro DD/MM/AAAA"),
+        brazilianDateTime: z.string().describe("Data e hora no formato brasileiro"),
+        weekday: z.string().describe("Dia da semana"),
+        isBusinessDay: z.boolean().describe("Se é dia útil (segunda a sexta)"),
+        dayOfYear: z.number().describe("Dia do ano (1-365/366)"),
+        weekOfYear: z.number().describe("Semana do ano"),
     }),
     execute: async ({ context }) => {
         try {

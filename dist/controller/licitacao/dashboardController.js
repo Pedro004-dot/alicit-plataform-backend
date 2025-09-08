@@ -1,13 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const dashboardService_1 = __importDefault(require("../../services/licitacao/dashboardService"));
+import dashboardService from "../../services/licitacao/dashboardService";
 const getDashboardData = async (req, res) => {
     try {
         const { cnpj } = req.params;
-        const data = await dashboardService_1.default.getDashboardData(cnpj);
+        const data = await dashboardService.getDashboardData(cnpj);
         res.status(200).json({
             success: true,
             data,
@@ -22,7 +17,7 @@ const getDashboardData = async (req, res) => {
 const getLicitacoesComEstagios = async (req, res) => {
     try {
         const { cnpj } = req.params;
-        const data = await dashboardService_1.default.getLicitacoesComEstagios(cnpj);
+        const data = await dashboardService.getLicitacoesComEstagios(cnpj);
         res.status(200).json({
             success: true,
             data,
@@ -34,4 +29,4 @@ const getLicitacoesComEstagios = async (req, res) => {
         res.status(500).json({ error: "Erro ao buscar licitações com estágios" });
     }
 };
-exports.default = { getDashboardData, getLicitacoesComEstagios };
+export default { getDashboardData, getLicitacoesComEstagios };

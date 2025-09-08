@@ -1,9 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const supabase_js_1 = require("@supabase/supabase-js");
+import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey);
 class LicitacaoEmpresaEstagiosRepository {
     async listarLicitacoesComEstagios(empresaCnpj) {
         const { data, error } = await supabase
@@ -73,4 +71,4 @@ class LicitacaoEmpresaEstagiosRepository {
         return contadores;
     }
 }
-exports.default = new LicitacaoEmpresaEstagiosRepository();
+export default new LicitacaoEmpresaEstagiosRepository();

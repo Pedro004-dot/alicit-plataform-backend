@@ -1,19 +1,13 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.PineconeRepository = void 0;
-const pinecone_1 = require("@pinecone-database/pinecone");
-const openai_1 = __importDefault(require("openai"));
-class PineconeRepository {
+import { Pinecone } from '@pinecone-database/pinecone';
+import OpenAI from 'openai';
+export class PineconeRepository {
     constructor() {
         this.indexName = 'alicit-editais';
         this.vectorStore = new Map(); // Cache em memória para compatibilidade
-        this.pinecone = new pinecone_1.Pinecone({
+        this.pinecone = new Pinecone({
             apiKey: process.env.PINECONE_API_KEY,
         });
-        this.openaiClient = new openai_1.default({
+        this.openaiClient = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
         });
     }
@@ -327,5 +321,4 @@ class PineconeRepository {
         console.log('✅ PineconeRepository fechado');
     }
 }
-exports.PineconeRepository = PineconeRepository;
-exports.default = PineconeRepository;
+export default PineconeRepository;

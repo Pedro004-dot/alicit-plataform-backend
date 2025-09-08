@@ -1,12 +1,7 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const getAllEmpresaService_1 = __importDefault(require("../../services/empresa/getAllEmpresaService"));
+import getAllEmpresaService from "../../services/empresa/getAllEmpresaService";
 const getAllEmpresa = async (req, res) => {
     try {
-        const getAllEmpresa = await getAllEmpresaService_1.default.getAllEmpresa();
+        const getAllEmpresa = await getAllEmpresaService.getAllEmpresa();
         res.status(201).json(getAllEmpresa);
         return getAllEmpresa;
     }
@@ -15,4 +10,4 @@ const getAllEmpresa = async (req, res) => {
         res.status(500).json({ error: "Erro ao buscar empresas" });
     }
 };
-exports.default = { getAllEmpresa };
+export default { getAllEmpresa };

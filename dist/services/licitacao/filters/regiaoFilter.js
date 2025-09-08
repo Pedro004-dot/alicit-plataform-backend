@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.filtroRegiao = void 0;
-exports.filtroRegiao = {
+export const filtroRegiao = {
     nome: 'regiao',
     prioridade: 3,
     estaAtivo: (perfil) => {

@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const fetchItensLicitacao = async (cnpj, ano, sequencial) => {
     try {
         const url = `https://pncp.gov.br/api/pncp/v1/orgaos/${cnpj}/compras/${ano}/${sequencial}/itens`;
@@ -137,4 +135,4 @@ const downloadLicitacaoPNCP = async (params) => {
     console.log(`Total documents: ${i}`);
     return documentsUrl;
 };
-exports.default = { searchLicitacoesPNCP, downloadLicitacaoPNCP };
+export default { searchLicitacoesPNCP, downloadLicitacaoPNCP };

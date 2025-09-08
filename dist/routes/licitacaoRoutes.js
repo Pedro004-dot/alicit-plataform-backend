@@ -1,38 +1,33 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const search_licitacao_controller_1 = __importDefault(require("../controller/licitacao/search_licitacao_controller"));
-const find_licitacao_controller_1 = __importDefault(require("../controller/licitacao/find_licitacao_controller"));
-const matching_licitacao_controller_1 = __importDefault(require("../controller/licitacao/matching_licitacao_controller"));
-const statusLicitacaoEmpresaController_1 = __importDefault(require("../controller/licitacao/statusLicitacaoEmpresaController"));
-const recomendacaoController_1 = __importDefault(require("../controller/licitacao/recomendacaoController"));
-const dashboardController_1 = __importDefault(require("../controller/licitacao/dashboardController"));
-const pineconeDiagnosticController_1 = __importDefault(require("../controller/licitacao/pineconeDiagnosticController"));
-const router = (0, express_1.Router)();
+import { Router } from 'express';
+import licitacaoController from '../controller/licitacao/search_licitacao_controller';
+import findLicitacaoController from '../controller/licitacao/find_licitacao_controller';
+import matchingLicitacaoController from '../controller/licitacao/matching_licitacao_controller';
+import licitacaoEmpresaController from '../controller/licitacao/statusLicitacaoEmpresaController';
+import recomendacaoController from '../controller/licitacao/recomendacaoController';
+import dashboardController from '../controller/licitacao/dashboardController';
+import pineconeDiagnosticController from '../controller/licitacao/pineconeDiagnosticController';
+const router = Router();
 // busca novas licitacoes 
-router.post('/search', search_licitacao_controller_1.default.searchLicitacao);
+router.post('/search', licitacaoController.searchLicitacao);
 // busca licitacoes  no banco de dados
-router.post('/find', find_licitacao_controller_1.default.findLicitacao);
+router.post('/find', findLicitacaoController.findLicitacao);
 //cruzza as licitacoes com a empresa
-router.post('/matching', matching_licitacao_controller_1.default.calculateMatching);
+router.post('/matching', matchingLicitacaoController.calculateMatching);
 // diagnostico do Pinecone
-router.get('/pinecone/stats', pineconeDiagnosticController_1.default.obterEstatisticasPinecone);
-router.get('/pinecone/estado/:uf', pineconeDiagnosticController_1.default.obterLicitacoesPorEstado);
+router.get('/pinecone/stats', pineconeDiagnosticController.obterEstatisticasPinecone);
+router.get('/pinecone/estado/:uf', pineconeDiagnosticController.obterLicitacoesPorEstado);
 // rotas de dashboard (DEVEM VIR ANTES das rotas /empresa para evitar conflitos)
-router.get('/:cnpj/dashboard', dashboardController_1.default.getDashboardData);
-router.get('/:cnpj/estagios', dashboardController_1.default.getLicitacoesComEstagios);
+router.get('/:cnpj/dashboard', dashboardController.getDashboardData);
+router.get('/:cnpj/estagios', dashboardController.getLicitacoesComEstagios);
 // CRUD licitacao_empresa
-router.post('/empresa', statusLicitacaoEmpresaController_1.default.criar);
-router.put('/empresa/:id/status', statusLicitacaoEmpresaController_1.default.atualizarStatus);
-router.put('/empresa/status', statusLicitacaoEmpresaController_1.default.atualizarStatusPorChaves);
-router.get('/empresa/:cnpj', statusLicitacaoEmpresaController_1.default.listarTodas);
-router.get('/empresa/licitacao/:id', statusLicitacaoEmpresaController_1.default.buscarUma);
-router.delete('/empresa/:id', statusLicitacaoEmpresaController_1.default.deletar);
+router.post('/empresa', licitacaoEmpresaController.criar);
+router.put('/empresa/:id/status', licitacaoEmpresaController.atualizarStatus);
+router.put('/empresa/status', licitacaoEmpresaController.atualizarStatusPorChaves);
+router.get('/empresa/:cnpj', licitacaoEmpresaController.listarTodas);
+router.get('/empresa/licitacao/:id', licitacaoEmpresaController.buscarUma);
+router.delete('/empresa/:id', licitacaoEmpresaController.deletar);
 // rotas de recomendacoes
-router.get('/recomendacoes/:cnpj', recomendacaoController_1.default.listarRecomendacoes);
+router.get('/recomendacoes/:cnpj', recomendacaoController.listarRecomendacoes);
 // router.delete('/recomendacoes/remover', recomendacaoController.removerRecomendacao);
 // router.post('/recomendacoes/limpar-antigas', recomendacaoController.limparRecomendacoesAntigas);
-exports.default = router;
+export default router;

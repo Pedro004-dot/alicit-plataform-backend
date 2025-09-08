@@ -1,14 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateEmbeddings = generateEmbeddings;
-const openai_1 = __importDefault(require("openai"));
-const openaiClient = new openai_1.default({
+import OpenAI from 'openai';
+const openaiClient = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
-async function generateEmbeddings(chunks) {
+export async function generateEmbeddings(chunks) {
     console.log(`🤖 Gerando embeddings para ${chunks.length} chunks...`);
     const batchSize = 5;
     const chunksWithEmbeddings = [...chunks];

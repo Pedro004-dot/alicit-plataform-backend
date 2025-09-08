@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.filtroGeografico = void 0;
-const geolocation_1 = require("../geolocation");
-exports.filtroGeografico = {
+import { filterLicitacoesPorGeografia } from '../geolocation';
+export const filtroGeografico = {
     nome: 'geografico',
     prioridade: 1,
     estaAtivo: (perfil) => {
@@ -23,6 +20,6 @@ exports.filtroGeografico = {
             cidadeRadar: perfil.cidadeRadar,
             raioRadar: perfil.raioRadar
         };
-        return await (0, geolocation_1.filterLicitacoesPorGeografia)(licitacoes, filtroGeo);
+        return await filterLicitacoesPorGeografia(licitacoes, filtroGeo);
     }
 };

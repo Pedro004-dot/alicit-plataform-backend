@@ -50,6 +50,17 @@ app.use('/empresa', empresaRoutes);
 app.use('/user', userRoutes);
 app.use('/auth', authRoutes);
 
+// Error handler para debugging no Vercel
+app.use((error: any, req: any, res: any, next: any) => {
+  console.error('❌ Server Error:', error);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: error.message,
+    timestamp: new Date().toISOString(),
+    ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
+  });
+});
+
 // Inicializar Pinecone no startup  
 const initializePinecone = async () => {
   try {

@@ -1,8 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const pinecone_1 = require("@pinecone-database/pinecone");
-const openai_1 = require("openai");
-const filterEngine_1 = require("./filters/filterEngine");
+import { Pinecone } from '@pinecone-database/pinecone';
+import { OpenAI } from 'openai';
+import { aplicarFiltrosAtivos } from './filters/filterEngine';
 const calculateMatching = async (empresaPerfil) => {
     try {
         console.log('🚀 Iniciando matching otimizado via Pinecone...');
@@ -11,7 +9,7 @@ const calculateMatching = async (empresaPerfil) => {
         // 2. Construir filtros mínimos do Pinecone (apenas licitações vs editais)
         const filters = buildPineconeFilters();
         // 3. Busca vetorial otimizada - apenas top candidatos
-        const pinecone = new pinecone_1.Pinecone({ apiKey: process.env.PINECONE_API_KEY });
+        const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
         const index = pinecone.index('alicit-editais');
         const searchResults = await index.query({
             vector: empresaEmbedding,
@@ -55,7 +53,7 @@ const calculateMatching = async (empresaPerfil) => {
         const licitacoesParaFiltro = candidates.map(candidate => candidate.licitacao);
         console.log(`📊 ${licitacoesParaFiltro.length} licitações semânticas encontradas, aplicando filtros precisos...`);
         // 6. APLICAR FILTROS PRECISOS usando filterEngine.ts
-        const resultadoFiltros = await (0, filterEngine_1.aplicarFiltrosAtivos)(licitacoesParaFiltro, empresaPerfil);
+        const resultadoFiltros = await aplicarFiltrosAtivos(licitacoesParaFiltro, empresaPerfil);
         console.log('🔍 FILTROS APLICADOS:');
         resultadoFiltros.filtrosAplicados.forEach(filtro => {
             console.log(`  📋 ${filtro}`);
@@ -112,7 +110,7 @@ const calculateMatching = async (empresaPerfil) => {
  * Focamos em CONTEÚDO SEMÂNTICO, não identificação ou localização
  */
 const generateEmpresaEmbedding = async (empresaPerfil) => {
-    const openai = new openai_1.OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     // EMBEDDING FOCADO: Apenas 5 campos essenciais para busca semântica
     const empresaText = [
         // 1. RAZÃO SOCIAL - Identidade da empresa
@@ -158,6 +156,6 @@ const buildPineconeFilters = () => {
     console.log('🔍 Filtro Pinecone aplicado: apenas licitações (sem filtros geográficos/valor)');
     return filters;
 };
-exports.default = {
+export default {
     calculateMatching
 };

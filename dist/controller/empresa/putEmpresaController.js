@@ -1,9 +1,4 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const empresaConfigService_1 = __importDefault(require("../../services/empresa/empresaConfigService"));
+import empresaConfigService from "../../services/empresa/empresaConfigService";
 const atualizarEmpresa = async (req, res) => {
     try {
         const { empresaId } = req.params;
@@ -11,7 +6,7 @@ const atualizarEmpresa = async (req, res) => {
         if (!empresaId) {
             return res.status(400).json({ error: "ID da empresa é obrigatório" });
         }
-        const empresaAtualizada = await empresaConfigService_1.default.atualizarConfiguracoesEmpresa(empresaId, empresaData);
+        const empresaAtualizada = await empresaConfigService.atualizarConfiguracoesEmpresa(empresaId, empresaData);
         res.status(200).json(empresaAtualizada);
     }
     catch (error) {
@@ -25,7 +20,7 @@ const putEmpresa = async (req, res) => {
         if (!cnpj) {
             return res.status(400).json({ error: "CNPJ não informado" });
         }
-        const putEmpresa = await empresaConfigService_1.default.putEmpresa(cnpj, req.body);
+        const putEmpresa = await empresaConfigService.putEmpresa(cnpj, req.body);
         res.status(201).json(putEmpresa);
         return putEmpresa;
     }
@@ -44,7 +39,7 @@ const atualizarDadosBancarios = async (req, res) => {
         if (!dadosBancarios.agencia || !dadosBancarios.numeroConta || !dadosBancarios.nomeTitular) {
             return res.status(400).json({ error: "Agência, número da conta e nome do titular são obrigatórios" });
         }
-        const dadosAtualizados = await empresaConfigService_1.default.atualizarConfiguracoesEmpresa(empresaId, { dadosBancarios });
+        const dadosAtualizados = await empresaConfigService.atualizarConfiguracoesEmpresa(empresaId, { dadosBancarios });
         res.status(200).json(dadosAtualizados);
     }
     catch (error) {
@@ -58,7 +53,7 @@ const buscarEmpresaCompleta = async (req, res) => {
         if (!empresaId) {
             return res.status(400).json({ error: "ID da empresa é obrigatório" });
         }
-        const empresa = await empresaConfigService_1.default.buscarEmpresaCompleta(empresaId);
+        const empresa = await empresaConfigService.buscarEmpresaCompleta(empresaId);
         res.status(200).json(empresa);
     }
     catch (error) {
@@ -72,7 +67,7 @@ const buscarEmpresaPorCnpj = async (req, res) => {
         if (!cnpj) {
             return res.status(400).json({ error: "CNPJ é obrigatório" });
         }
-        const empresa = await empresaConfigService_1.default.buscarEmpresaPorCnpjCompleta(cnpj);
+        const empresa = await empresaConfigService.buscarEmpresaPorCnpjCompleta(cnpj);
         res.status(200).json(empresa);
     }
     catch (error) {
@@ -80,7 +75,7 @@ const buscarEmpresaPorCnpj = async (req, res) => {
         res.status(500).json({ error: error.message || "Erro ao buscar empresa por CNPJ" });
     }
 };
-exports.default = {
+export default {
     atualizarEmpresa,
     atualizarDadosBancarios,
     buscarEmpresaCompleta,

@@ -1,9 +1,4 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const recomendacaoRepository_1 = __importDefault(require("../../repositories/recomendacaoRepository"));
+import recomendacaoRepository from '../../repositories/recomendacaoRepository';
 class RecomendacaoService {
     async salvarRecomendacoes(empresaCnpj, matchResults) {
         try {
@@ -20,7 +15,7 @@ class RecomendacaoService {
                     timestamp: new Date().toISOString()
                 }
             }));
-            const resultado = await recomendacaoRepository_1.default.salvarRecomendacoes(recomendacoes);
+            const resultado = await recomendacaoRepository.salvarRecomendacoes(recomendacoes);
             console.log(`✅ ${resultado.length} recomendações salvas com sucesso`);
             return {
                 success: true,
@@ -36,7 +31,7 @@ class RecomendacaoService {
     async listarRecomendacoesPendentes(empresaCnpj) {
         try {
             console.log(`🔍 Listando recomendações pendentes para empresa ${empresaCnpj}`);
-            const recomendacoes = await recomendacaoRepository_1.default.listarRecomendacoesPendentes(empresaCnpj);
+            const recomendacoes = await recomendacaoRepository.listarRecomendacoesPendentes(empresaCnpj);
             console.log(`📋 ${recomendacoes.length} recomendações encontradas`);
             return {
                 success: true,
@@ -52,7 +47,7 @@ class RecomendacaoService {
     async removerRecomendacao(numeroControlePNCP, empresaCnpj) {
         try {
             console.log(`🗑️ Removendo recomendação ${numeroControlePNCP} da empresa ${empresaCnpj}`);
-            await recomendacaoRepository_1.default.removerRecomendacao(numeroControlePNCP, empresaCnpj);
+            await recomendacaoRepository.removerRecomendacao(numeroControlePNCP, empresaCnpj);
             console.log('✅ Recomendação removida com sucesso');
             return {
                 success: true,
@@ -67,7 +62,7 @@ class RecomendacaoService {
     async limparRecomendacoesAntigas(diasParaExpirar = 30) {
         try {
             console.log(`🧹 Limpando recomendações antigas (>${diasParaExpirar} dias)`);
-            const removidas = await recomendacaoRepository_1.default.limparRecomendacoesAntigas(diasParaExpirar);
+            const removidas = await recomendacaoRepository.limparRecomendacoesAntigas(diasParaExpirar);
             console.log(`✅ ${removidas} recomendações antigas removidas`);
             return {
                 success: true,
@@ -81,4 +76,4 @@ class RecomendacaoService {
         }
     }
 }
-exports.default = new RecomendacaoService();
+export default new RecomendacaoService();

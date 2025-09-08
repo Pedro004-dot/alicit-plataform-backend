@@ -1,28 +1,23 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-require("dotenv/config");
+import 'dotenv/config';
 // Desabilitar telemetria do Mastra
 globalThis.___MASTRA_TELEMETRY___ = true;
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const licitacaoRoutes_1 = __importDefault(require("./routes/licitacaoRoutes"));
-const analysisRoutes_1 = __importDefault(require("./routes/analysisRoutes"));
-const empresaRoutes_1 = __importDefault(require("./routes/empresaRoutes"));
-const licitacaoDocumentosRoutes_1 = __importDefault(require("./routes/licitacaoDocumentosRoutes"));
-const relatoriosRoutes_1 = __importDefault(require("./routes/relatoriosRoutes"));
-const pineconeRepository_1 = require("./repositories/pineconeRepository");
-const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
-const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
-const app = (0, express_1.default)();
+import express from 'express';
+import cors from 'cors';
+import licitacaoRoutes from './routes/licitacaoRoutes';
+import editalAnalysisRoutes from './routes/analysisRoutes';
+import empresaRoutes from './routes/empresaRoutes';
+import licitacaoDocumentosRoutes from './routes/licitacaoDocumentosRoutes';
+import relatoriosRoutes from './routes/relatoriosRoutes';
+import { PineconeRepository } from './repositories/pineconeRepository';
+import userRoutes from './routes/userRoutes';
+import authRoutes from './routes/authRoutes';
+const app = express();
 const PORT = 3002;
-app.use((0, cors_1.default)({
+app.use(cors({
     origin: 'http://localhost:3000',
     credentials: true
 }));
-app.use(express_1.default.json());
+app.use(express.json());
 // Health check para Vercel
 app.get('/', (req, res) => {
     res.json({
@@ -40,18 +35,28 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
-app.use('/licitacoes', licitacaoRoutes_1.default);
-app.use('/licitacoes-documentos', licitacaoDocumentosRoutes_1.default);
-app.use('/edital', analysisRoutes_1.default);
-app.use('/relatorios', relatoriosRoutes_1.default);
-app.use('/empresa', empresaRoutes_1.default);
-app.use('/user', userRoutes_1.default);
-app.use('/auth', authRoutes_1.default);
+app.use('/licitacoes', licitacaoRoutes);
+app.use('/licitacoes-documentos', licitacaoDocumentosRoutes);
+app.use('/edital', editalAnalysisRoutes);
+app.use('/relatorios', relatoriosRoutes);
+app.use('/empresa', empresaRoutes);
+app.use('/user', userRoutes);
+app.use('/auth', authRoutes);
+// Error handler para debugging no Vercel
+app.use((error, req, res, next) => {
+    console.error('❌ Server Error:', error);
+    res.status(500).json({
+        error: 'Internal Server Error',
+        message: error.message,
+        timestamp: new Date().toISOString(),
+        ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
+    });
+});
 // Inicializar Pinecone no startup  
 const initializePinecone = async () => {
     try {
         if (process.env.PINECONE_API_KEY) {
-            const pineconeRepo = new pineconeRepository_1.PineconeRepository();
+            const pineconeRepo = new PineconeRepository();
             await pineconeRepo.initialize();
         }
         else {
@@ -76,4 +81,4 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 // Para Vercel - export default
-exports.default = app;
+export default app;

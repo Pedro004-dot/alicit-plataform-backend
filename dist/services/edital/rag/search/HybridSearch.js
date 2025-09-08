@@ -1,14 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.HybridSearch = void 0;
-const openai_1 = __importDefault(require("openai"));
-class HybridSearch {
+import OpenAI from 'openai';
+export class HybridSearch {
     constructor(vectorStorage) {
         this.vectorStorage = vectorStorage;
-        this.openaiClient = new openai_1.default({
+        this.openaiClient = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
         });
     }
@@ -199,4 +193,3 @@ class HybridSearch {
         return false;
     }
 }
-exports.HybridSearch = HybridSearch;

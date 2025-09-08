@@ -1,15 +1,11 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.extractTechnicalSummary = extractTechnicalSummary;
-exports.extractImpugnacaoAnalysis = extractImpugnacaoAnalysis;
-function extractTechnicalSummary(report) {
+export function extractTechnicalSummary(report) {
     if (!report || typeof report !== 'string') {
         return "Resumo técnico não disponível";
     }
     const match = report.match(/## RESUMO TÉCNICO\n(.*?)\n---/s);
     return match ? match[1].trim() : "Resumo técnico não identificado no relatório";
 }
-function extractImpugnacaoAnalysis(report) {
+export function extractImpugnacaoAnalysis(report) {
     if (!report || typeof report !== 'string') {
         return "Análise de impugnação não disponível";
     }

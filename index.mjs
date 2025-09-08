@@ -1,4 +1,4 @@
-// Vercel entry point - import Express app
+// Vercel entry point - import Express app as ES module
 import app from './dist/server.js';
 
 // Export Express app for Vercel

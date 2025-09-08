@@ -1,10 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.LicitacaoDocumentosController = void 0;
-const licitacaoDocumentosService_1 = require("../../services/licitacao/licitacaoDocumentosService");
-class LicitacaoDocumentosController {
+import { LicitacaoDocumentosService } from '../../services/licitacao/licitacaoDocumentosService';
+export class LicitacaoDocumentosController {
     constructor() {
-        this.licitacaoDocumentosService = new licitacaoDocumentosService_1.LicitacaoDocumentosService();
+        this.licitacaoDocumentosService = new LicitacaoDocumentosService();
     }
     async listarDocumentos(req, res) {
         try {
@@ -101,4 +98,3 @@ class LicitacaoDocumentosController {
         }
     }
 }
-exports.LicitacaoDocumentosController = LicitacaoDocumentosController;

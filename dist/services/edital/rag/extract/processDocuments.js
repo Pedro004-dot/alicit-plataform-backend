@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.processDocuments = processDocuments;
-const pdfProcessorAdapter_1 = require("../../../../adapters/pdfProcessorAdapter");
-async function processDocuments(request) {
-    const pdfProcessor = new pdfProcessorAdapter_1.PDFProcessorAdapter();
+import { PDFProcessorAdapter } from "../../../../adapters/pdfProcessorAdapter";
+export async function processDocuments(request) {
+    const pdfProcessor = new PDFProcessorAdapter();
     const editalDocuments = [];
     if (!request.documents || request.documents.length === 0) {
         throw new Error(`❌ CRÍTICO: Nenhum documento fornecido para licitação ${request.licitacaoId}. Sistema RAG requer documentos reais.`);

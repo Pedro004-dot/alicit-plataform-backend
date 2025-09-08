@@ -1,13 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.sequentialWorkflowMemory = void 0;
 /**
  * Configuração de memória simplificada para Vercel
  * - Sem Memory instance para reduzir bundle size
  * - Usaremos contexto direto nos agentes
  */
 // Configuração simplificada para Vercel - sem Memory instance
-exports.sequentialWorkflowMemory = undefined;
+export const sequentialWorkflowMemory = undefined;
 /**
  * Template da working memory para contexto empresarial e análise progressiva
  */

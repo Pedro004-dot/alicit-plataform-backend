@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.generatePDFReport = generatePDFReport;
-const pdfGeneratorAdapter_1 = require("../../../adapters/pdfGeneratorAdapter");
-async function generatePDFReport(data) {
-    const pdfGenerator = new pdfGeneratorAdapter_1.PDFGeneratorAdapter();
+import { PDFGeneratorAdapter } from "../../../adapters/pdfGeneratorAdapter";
+export async function generatePDFReport(data) {
+    const pdfGenerator = new PDFGeneratorAdapter();
     try {
         return await pdfGenerator.generateReport(data);
     }

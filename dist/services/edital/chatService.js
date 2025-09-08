@@ -1,18 +1,12 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.EditalChatService = void 0;
-const openai_1 = __importDefault(require("openai"));
-const RAGService_1 = require("./RAGService");
-const openaiClient = new openai_1.default({
+import OpenAI from 'openai';
+import { EditalRAGService } from './RAGService';
+const openaiClient = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
-class EditalChatService {
+export class EditalChatService {
     constructor() {
         this.initialized = false;
-        this.ragService = new RAGService_1.EditalRAGService();
+        this.ragService = new EditalRAGService();
     }
     async initialize() {
         if (!this.initialized) {
@@ -163,4 +157,3 @@ ${context}`;
         return [];
     }
 }
-exports.EditalChatService = EditalChatService;

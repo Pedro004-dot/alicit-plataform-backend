@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.clearCidadesRaioCache = exports.filterLicitacoesPorGeografia = void 0;
-const coordenadasService_1 = require("./coordenadasService");
-const distanciaCalculator_1 = require("./distanciaCalculator");
+import { getCoordenadasCidade } from './coordenadasService';
+import { calcularDistanciaHaversine } from './distanciaCalculator';
 // Cache para cidades em raio específico (chave: "cidade:raio", valor: Set de cidades)
 const cidadesRaioCache = new Map();
 /**
@@ -11,10 +8,10 @@ const cidadesRaioCache = new Map();
  * @param filtroGeo - Filtro geográfico com cidade e raio
  * @returns Licitações dentro do raio especificado
  */
-const filterLicitacoesPorGeografia = async (licitacoes, filtroGeo) => {
+export const filterLicitacoesPorGeografia = async (licitacoes, filtroGeo) => {
     const { cidadeRadar, raioRadar } = filtroGeo;
     // Busca coordenadas da cidade radar
-    const coordenadasRadar = await (0, coordenadasService_1.getCoordenadasCidade)(cidadeRadar);
+    const coordenadasRadar = await getCoordenadasCidade(cidadeRadar);
     if (!coordenadasRadar) {
         console.warn(`Cidade radar '${cidadeRadar}' não encontrada`);
         return licitacoes; // Retorna todas se não encontrar a cidade
@@ -37,9 +34,9 @@ const filterLicitacoesPorGeografia = async (licitacoes, filtroGeo) => {
             continue;
         }
         // Calcula distância
-        const coordenadasLicitacao = await (0, coordenadasService_1.getCoordenadasCidade)(cidadeLicitacao);
+        const coordenadasLicitacao = await getCoordenadasCidade(cidadeLicitacao);
         if (coordenadasLicitacao) {
-            const distancia = (0, distanciaCalculator_1.calcularDistanciaHaversine)(coordenadasRadar, coordenadasLicitacao);
+            const distancia = calcularDistanciaHaversine(coordenadasRadar, coordenadasLicitacao);
             if (distancia <= raioRadar) {
                 cidadesNoRaio.add(cidadeKey);
                 licitacoesFiltradas.push(licitacao);
@@ -50,12 +47,10 @@ const filterLicitacoesPorGeografia = async (licitacoes, filtroGeo) => {
     cidadesRaioCache.set(cacheKey, cidadesNoRaio);
     return licitacoesFiltradas;
 };
-exports.filterLicitacoesPorGeografia = filterLicitacoesPorGeografia;
 /**
  * Limpa cache de cidades por raio
  */
-const clearCidadesRaioCache = () => {
+export const clearCidadesRaioCache = () => {
     cidadesRaioCache.clear();
     console.log('🧹 Cache de cidades por raio limpo');
 };
-exports.clearCidadesRaioCache = clearCidadesRaioCache;

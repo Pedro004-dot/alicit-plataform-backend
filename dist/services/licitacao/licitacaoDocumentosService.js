@@ -1,15 +1,9 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.LicitacaoDocumentosService = void 0;
-const documentStorageService_1 = require("./documentStorageService");
-const downloadLicitacao_1 = __importDefault(require("./downloadLicitacao"));
-const licitacaoRepository_1 = __importDefault(require("../../repositories/licitacaoRepository"));
-class LicitacaoDocumentosService {
+import { DocumentStorageService } from './documentStorageService';
+import downloadLicitacao from './downloadLicitacao';
+import licitacaoRepository from '../../repositories/licitacaoRepository';
+export class LicitacaoDocumentosService {
     constructor() {
-        this.documentStorageService = new documentStorageService_1.DocumentStorageService();
+        this.documentStorageService = new DocumentStorageService();
     }
     async processarEsalvarDocumentosLicitacao(numeroControlePNCP) {
         console.log(`🔄 Processando e salvando documentos para licitação ${numeroControlePNCP}`);
@@ -19,34 +13,34 @@ class LicitacaoDocumentosService {
             return await this.documentStorageService.buscarDocumentosHierarquia(numeroControlePNCP);
         }
         console.log(`📥 Documentos não encontrados, fazendo download e processamento completo`);
-        const processedResult = await downloadLicitacao_1.default.downloadLicitacaoPNCP({
+        const processedResult = await downloadLicitacao.downloadLicitacaoPNCP({
             numeroControlePNCP
         });
         await this.documentStorageService.salvarDocumentosLicitacao(numeroControlePNCP, processedResult.extractionResult);
         return processedResult.documents;
     }
     async documentosExistem(numeroControlePNCP) {
-        return await licitacaoRepository_1.default.documentosExistem(numeroControlePNCP);
+        return await licitacaoRepository.documentosExistem(numeroControlePNCP);
     }
     async buscarDocumentos(numeroControlePNCP) {
-        return await licitacaoRepository_1.default.getDocumentosByPNCP(numeroControlePNCP);
+        return await licitacaoRepository.getDocumentosByPNCP(numeroControlePNCP);
     }
     async buscarDocumentoPorId(documentoId) {
-        return await licitacaoRepository_1.default.getDocumentoById(documentoId);
+        return await licitacaoRepository.getDocumentoById(documentoId);
     }
     async downloadDocumento(documentoId) {
-        const documento = await licitacaoRepository_1.default.getDocumentoById(documentoId);
+        const documento = await licitacaoRepository.getDocumentoById(documentoId);
         if (!documento) {
             throw new Error(`Documento com ID ${documentoId} não encontrado`);
         }
-        return await licitacaoRepository_1.default.downloadDocumentoFromStorage(documento.url_storage);
+        return await licitacaoRepository.downloadDocumentoFromStorage(documento.url_storage);
     }
     async gerarUrlPreview(documentoId, expiresIn = 3600) {
-        const documento = await licitacaoRepository_1.default.getDocumentoById(documentoId);
+        const documento = await licitacaoRepository.getDocumentoById(documentoId);
         if (!documento) {
             throw new Error(`Documento com ID ${documentoId} não encontrado`);
         }
-        return await licitacaoRepository_1.default.generateSignedUrl(documento.url_storage, expiresIn);
+        return await licitacaoRepository.generateSignedUrl(documento.url_storage, expiresIn);
     }
     async processarDocumentosLicitacao(numeroControlePNCP) {
         console.log(`🔄 Processando documentos para licitação ${numeroControlePNCP}`);
@@ -57,7 +51,7 @@ class LicitacaoDocumentosService {
         }
         else {
             console.log(`📥 Documentos não encontrados, fazendo processamento completo...`);
-            const processedResult = await downloadLicitacao_1.default.downloadLicitacaoPNCP({
+            const processedResult = await downloadLicitacao.downloadLicitacaoPNCP({
                 numeroControlePNCP
             });
             await this.documentStorageService.salvarDocumentosLicitacao(numeroControlePNCP, processedResult.extractionResult);
@@ -69,7 +63,7 @@ class LicitacaoDocumentosService {
         const documentos = [];
         for (const doc of documentosIndexados) {
             try {
-                const buffer = await licitacaoRepository_1.default.downloadDocumentoFromStorage(doc.url_storage);
+                const buffer = await licitacaoRepository.downloadDocumentoFromStorage(doc.url_storage);
                 const documentFile = {
                     filename: doc.nome_arquivo,
                     buffer: buffer,
@@ -104,7 +98,7 @@ class LicitacaoDocumentosService {
         return 'documento';
     }
     async deletarDocumento(documentoId) {
-        const documento = await licitacaoRepository_1.default.getDocumentoById(documentoId);
+        const documento = await licitacaoRepository.getDocumentoById(documentoId);
         if (!documento) {
             throw new Error(`Documento com ID ${documentoId} não encontrado`);
         }
@@ -120,8 +114,7 @@ class LicitacaoDocumentosService {
         catch (error) {
             console.warn(`⚠️ Erro ao deletar arquivo do storage: ${error}`);
         }
-        await licitacaoRepository_1.default.deleteDocumento(documentoId);
+        await licitacaoRepository.deleteDocumento(documentoId);
         console.log(`🗑️ Documento ${documento.nome_arquivo} deletado com sucesso`);
     }
 }
-exports.LicitacaoDocumentosService = LicitacaoDocumentosService;

@@ -1,18 +1,15 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.calculateMatchingScore = void 0;
-const textNormalization_1 = require("./textNormalization");
-const regexScore_1 = require("./regexScore");
-const levenshteinScore_1 = require("./levenshteinScore");
-const tfidfScore_1 = require("./tfidfScore");
-const taxonomiaScore_1 = require("./taxonomiaScore");
+import { normalizeText } from './textNormalization';
+import { calculateRegexScore } from './regexScore';
+import { calculateLevenshteinScore } from './levenshteinScore';
+import { calculateTfidfScore } from './tfidfScore';
+import { calculateTaxonomiaScore } from './taxonomiaScore';
 /**
  * Calcula o score final de matching entre perfil da empresa e licitação
  * @param empresaPerfil - Perfil da empresa com termos de interesse
  * @param licitacao - Licitação a ser analisada
  * @returns Resultado do matching com score e detalhes
  */
-const calculateMatchingScore = (empresaPerfil, licitacao) => {
+export const calculateMatchingScore = (empresaPerfil, licitacao) => {
     // Se não há termos de interesse, usa score base = 1.0 (sem análise textual)
     const temTermos = empresaPerfil.termosInteresse?.length > 0;
     let regexScore = 0;
@@ -21,11 +18,11 @@ const calculateMatchingScore = (empresaPerfil, licitacao) => {
     let taxonomiaScore = 0;
     let finalScore = 1.0; // Score base quando não há análise textual
     if (temTermos) {
-        const empresaTermos = (0, textNormalization_1.normalizeText)(empresaPerfil.termosInteresse.join(' '));
-        regexScore = (0, regexScore_1.calculateRegexScore)(empresaTermos, licitacao.itens);
-        levenshteinScore = (0, levenshteinScore_1.calculateLevenshteinScore)(empresaTermos, licitacao.itens);
-        tfidfScore = (0, tfidfScore_1.calculateTfidfScore)(empresaTermos, licitacao.itens);
-        taxonomiaScore = (0, taxonomiaScore_1.calculateTaxonomiaScore)(empresaTermos, licitacao.itens);
+        const empresaTermos = normalizeText(empresaPerfil.termosInteresse.join(' '));
+        regexScore = calculateRegexScore(empresaTermos, licitacao.itens);
+        levenshteinScore = calculateLevenshteinScore(empresaTermos, licitacao.itens);
+        tfidfScore = calculateTfidfScore(empresaTermos, licitacao.itens);
+        taxonomiaScore = calculateTaxonomiaScore(empresaTermos, licitacao.itens);
         finalScore = (regexScore * 0.4) + (levenshteinScore * 0.3) + (tfidfScore * 0.2) + (taxonomiaScore * 0.1);
     }
     // Aplica regras de negócio (sempre aplicadas, com ou sem termos)
@@ -41,7 +38,6 @@ const calculateMatchingScore = (empresaPerfil, licitacao) => {
         }
     };
 };
-exports.calculateMatchingScore = calculateMatchingScore;
 /**
  * Aplica regras de negócio para boosting/penalização do score
  * @param score - Score inicial

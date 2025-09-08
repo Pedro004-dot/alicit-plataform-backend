@@ -1,18 +1,12 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DocumentStorageService = void 0;
-const licitacaoRepository_1 = __importDefault(require("../../repositories/licitacaoRepository"));
-class DocumentStorageService {
+import licitacaoRepository from '../../repositories/licitacaoRepository';
+export class DocumentStorageService {
     async salvarDocumentosLicitacao(numeroControlePNCP, extractionResult) {
         console.log(`💾 Salvando ${extractionResult.totalFiles} documentos para licitação ${numeroControlePNCP}`);
         const storedDocuments = [];
         for (const document of extractionResult.documents) {
             try {
                 const storagePath = this.buildStoragePath(numeroControlePNCP, document);
-                const storageUrl = await licitacaoRepository_1.default.uploadDocumentoToStorage(storagePath, document.filename, document.buffer, document.mimetype);
+                const storageUrl = await licitacaoRepository.uploadDocumentoToStorage(storagePath, document.filename, document.buffer, document.mimetype);
                 const documentData = {
                     numero_controle_pncp: numeroControlePNCP,
                     nome_arquivo: document.filename,
@@ -22,7 +16,7 @@ class DocumentStorageService {
                     tamanho_bytes: document.size,
                     hash_arquivo: this.generateFileHash(document.buffer)
                 };
-                const storedDoc = await licitacaoRepository_1.default.createDocumento(documentData);
+                const storedDoc = await licitacaoRepository.createDocumento(documentData);
                 storedDocuments.push({
                     id: storedDoc.id,
                     numeroControlePNCP: storedDoc.numero_controle_pncp,
@@ -46,11 +40,11 @@ class DocumentStorageService {
         return storedDocuments;
     }
     async buscarDocumentosPorTipo(numeroControlePNCP, tipo) {
-        const documentos = await licitacaoRepository_1.default.getDocumentosByTipo(numeroControlePNCP, tipo);
+        const documentos = await licitacaoRepository.getDocumentosByTipo(numeroControlePNCP, tipo);
         return documentos.map(doc => this.convertToStoredDocument(doc));
     }
     async buscarDocumentosHierarquia(numeroControlePNCP) {
-        const documentos = await licitacaoRepository_1.default.getDocumentosByPNCP(numeroControlePNCP);
+        const documentos = await licitacaoRepository.getDocumentosByPNCP(numeroControlePNCP);
         return {
             documentos,
             totalDocumentos: documentos.length
@@ -78,4 +72,3 @@ class DocumentStorageService {
         return crypto.createHash('md5').update(buffer).digest('hex');
     }
 }
-exports.DocumentStorageService = DocumentStorageService;

@@ -1,10 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.queryEditalDatabase = void 0;
-const tools_1 = require("@mastra/core/tools");
-const zod_1 = require("zod");
-const HybridSearch_1 = require("../../services/edital/rag/search/HybridSearch");
-const PineconeStorage_1 = require("../../services/edital/rag/storage/PineconeStorage");
+import { createTool } from "@mastra/core/tools";
+import { z } from "zod";
+import { HybridSearch } from "../../services/edital/rag/search/HybridSearch";
+import { PineconeStorage } from "../../services/edital/rag/storage/PineconeStorage";
 // Instanciar dependências de forma lazy
 let vectorStorage = null;
 let hybridSearch = null;
@@ -15,23 +12,23 @@ const initializeStorage = async () => {
         if (!process.env.PINECONE_API_KEY) {
             throw new Error('PINECONE_API_KEY não configurado');
         }
-        vectorStorage = new PineconeStorage_1.PineconeStorage();
-        hybridSearch = new HybridSearch_1.HybridSearch(vectorStorage);
+        vectorStorage = new PineconeStorage();
+        hybridSearch = new HybridSearch(vectorStorage);
         await vectorStorage.initialize();
         initialized = true;
     }
 };
-exports.queryEditalDatabase = (0, tools_1.createTool)({
+export const queryEditalDatabase = createTool({
     id: "queryEditalDatabase",
     description: "Consulta o banco de dados vetorial do edital para encontrar informações específicas",
-    inputSchema: zod_1.z.object({
-        query: zod_1.z.string().describe("Query de busca em linguagem natural"),
-        licitacaoId: zod_1.z.string().describe("ID da licitação para busca"),
-        topK: zod_1.z.number().optional().default(10).describe("Número máximo de resultados"),
+    inputSchema: z.object({
+        query: z.string().describe("Query de busca em linguagem natural"),
+        licitacaoId: z.string().describe("ID da licitação para busca"),
+        topK: z.number().optional().default(10).describe("Número máximo de resultados"),
     }),
-    outputSchema: zod_1.z.object({
-        results: zod_1.z.array(zod_1.z.string()).describe("Trechos relevantes encontrados"),
-        totalFound: zod_1.z.number().describe("Total de resultados encontrados"),
+    outputSchema: z.object({
+        results: z.array(z.string()).describe("Trechos relevantes encontrados"),
+        totalFound: z.number().describe("Total de resultados encontrados"),
     }),
     execute: async ({ context }) => {
         try {

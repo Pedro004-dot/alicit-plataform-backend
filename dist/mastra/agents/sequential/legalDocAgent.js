@@ -1,16 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.legalDocAgent = void 0;
-const agent_1 = require("@mastra/core/agent");
-const openai_1 = require("@ai-sdk/openai");
-const memoryConfig_1 = require("../../config/memoryConfig");
-const tools_1 = require("../../tools");
+import { Agent } from "@mastra/core/agent";
+import { openai } from "@ai-sdk/openai";
+import { sequentialWorkflowMemory } from "../../config/memoryConfig";
+import { pineconeLicitacao, updateWorkingMemory, extractLegalData, compareDocuments, supabaseEmpresa } from "../../tools";
 /**
  * Agente 3: Análise Jurídico-Documental
  * Especialidade: Habilitação, riscos jurídicos e pontos de impugnação
  * Terceira etapa do workflow sequencial
  */
-exports.legalDocAgent = new agent_1.Agent({
+export const legalDocAgent = new Agent({
     name: "LegalDocAgent",
     description: "Analisa requisitos de habilitação, riscos jurídicos e identifica pontos de impugnação",
     instructions: `
@@ -134,13 +131,13 @@ Você é o terceiro agente no workflow sequencial. Sua função é avaliar aspec
 - Seja conservador na análise de riscos
 - Priorize documentos com maior impacto na habilitação
 `,
-    model: (0, openai_1.openai)("gpt-4o"),
-    memory: memoryConfig_1.sequentialWorkflowMemory,
+    model: openai("gpt-4o"),
+    memory: sequentialWorkflowMemory,
     tools: {
-        pineconeLicitacao: tools_1.pineconeLicitacao,
-        updateWorkingMemory: tools_1.updateWorkingMemory,
-        extractLegalData: tools_1.extractLegalData,
-        compareDocuments: tools_1.compareDocuments,
-        supabaseEmpresa: tools_1.supabaseEmpresa
+        pineconeLicitacao,
+        updateWorkingMemory,
+        extractLegalData,
+        compareDocuments,
+        supabaseEmpresa
     },
 });

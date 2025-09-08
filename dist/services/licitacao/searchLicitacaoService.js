@@ -1,10 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const pncpAdapter_1 = __importDefault(require("../../adapters/pncpAdapter"));
-const pineconeLicitacaoRepository_1 = __importDefault(require("../../repositories/pineconeLicitacaoRepository"));
+import pncpAdapter from '../../adapters/pncpAdapter';
+import pineconeLicitacaoRepository from '../../repositories/pineconeLicitacaoRepository';
 const buscarLicitacoes = async (params) => {
     console.log('🔍 Iniciando busca paralela de licitações...');
     console.log('📋 Parâmetros:', {
@@ -12,7 +7,7 @@ const buscarLicitacoes = async (params) => {
         palavraChave: params.palavraChave ? 'definida' : 'não definida'
     });
     const startTime = Date.now();
-    const licitacoes = await pncpAdapter_1.default.searchLicitacoesPNCP({
+    const licitacoes = await pncpAdapter.searchLicitacoesPNCP({
         dataFinal: params.dataFim?.replace(/-/g, '')
     }, 1000);
     const endTime = Date.now();
@@ -23,7 +18,7 @@ const buscarLicitacoes = async (params) => {
 const searchLicitacao = async (data) => {
     const licitacoes = await buscarLicitacoes(data);
     console.log(`💾 Salvando ${licitacoes.length} licitações no Pinecone...`);
-    await pineconeLicitacaoRepository_1.default.saveLicitacoes(licitacoes);
+    await pineconeLicitacaoRepository.saveLicitacoes(licitacoes);
     // Licitações já salvas diretamente no Pinecone
     return {
         total: licitacoes.length,
@@ -32,4 +27,4 @@ const searchLicitacao = async (data) => {
     };
 };
 // Não é mais necessário - licitações são salvas diretamente no Pinecone
-exports.default = { searchLicitacao };
+export default { searchLicitacao };

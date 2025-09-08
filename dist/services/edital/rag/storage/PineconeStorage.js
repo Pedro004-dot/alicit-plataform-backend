@@ -1,17 +1,11 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.VectorStorage = exports.PineconeStorage = void 0;
-const openai_1 = __importDefault(require("openai"));
-const pineconeRepository_1 = require("../../../../repositories/pineconeRepository");
-class PineconeStorage {
+import OpenAI from 'openai';
+import { PineconeRepository } from '../../../../repositories/pineconeRepository';
+export class PineconeStorage {
     constructor() {
         this.TTL_SEMANA = 7 * 24 * 60 * 60; // Mantém para compatibilidade (não usado no Pinecone)
         this.vectorStore = new Map(); // Cache in-memory mantido
-        this.pineconeRepo = new pineconeRepository_1.PineconeRepository();
-        this.openaiClient = new openai_1.default({
+        this.pineconeRepo = new PineconeRepository();
+        this.openaiClient = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
         });
     }
@@ -189,6 +183,6 @@ class PineconeStorage {
         await this.pineconeRepo.close();
     }
 }
-exports.PineconeStorage = PineconeStorage;
-exports.VectorStorage = PineconeStorage;
-exports.default = PineconeStorage;
+// Export da classe como default para manter compatibilidade
+export { PineconeStorage as VectorStorage };
+export default PineconeStorage;
