@@ -1,0 +1,23 @@
+
+TESTE DE WORKFLOW - ANÁLISE DE EDITAL
+=====================================
+
+Configuração:
+• Documento: /Users/pedrotorrezani/Documents/Programacao/alicit2.0/backend/documents/edital_maripora/
+• Licitação ID: TEST_MARIPORA_90005_2025
+• Empresa ID: EMPRESA_TESTE_LTDA
+• Timestamp: 26/08/2025, 18:27:17
+
+Processamento RAG:
+• Documentos Processados: 1
+• Chunks Gerados: 289
+
+Resultados:
+• Score de Qualidade: N/A/100
+• Status: N/A
+• Análise Completa: Não
+• Tempo de Execução: 41729ms
+• Tentativas de Refinamento: 0
+
+Recomendações:
+Nenhuma recomendação
