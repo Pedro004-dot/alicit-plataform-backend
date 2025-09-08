@@ -1,7 +1,7 @@
 import { createWorkflow, createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import { sequentialAgents } from "../agents/sequential";
-import { sequentialWorkflowMemory } from "../config/memoryConfig";
+// import { sequentialWorkflowMemory } from "../config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
 
 // Schema de entrada do workflow
 const sequentialInputSchema = z.object({

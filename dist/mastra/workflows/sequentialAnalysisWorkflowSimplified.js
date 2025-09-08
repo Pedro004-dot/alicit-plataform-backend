@@ -4,6 +4,7 @@ exports.sequentialAnalysisWorkflow = void 0;
 const workflows_1 = require("@mastra/core/workflows");
 const zod_1 = require("zod");
 const sequential_1 = require("../agents/sequential");
+// import { sequentialWorkflowMemory } from "../config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
 // Schema de entrada do workflow
 const sequentialInputSchema = zod_1.z.object({
     licitacaoId: zod_1.z.string().describe("ID da licitação para análise"),

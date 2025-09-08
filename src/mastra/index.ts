@@ -22,5 +22,5 @@ export const mastra = new Mastra({
 // Re-exportar componentes principais para facilitar uso
 export { sequentialAgents } from "./agents/sequential";
 export { sequentialAnalysisWorkflow } from "./workflows/sequentialAnalysisWorkflowSimplified";
-export { sequentialWorkflowMemory } from "./config/memoryConfig";
+// export { sequentialWorkflowMemory } from "./config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
 export { mastraTools } from "./tools";

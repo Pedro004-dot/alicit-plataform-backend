@@ -4,7 +4,8 @@ import {
   extractTechnicalSummary, 
   extractImpugnacaoAnalysis 
 } from "./hooks";
-import { mastra } from "../../mastra";
+// import { mastra } from "../../mastra"; // Temporariamente removido para compatibilidade Vercel serverless
+import { sequentialAgents } from "../../mastra/agents/sequential";
 import empresaRepository from "../../repositories/empresaRepository";
 import { RelatorioStorageService, TipoRelatorio } from "./relatorioStorageService";
 
@@ -128,26 +129,132 @@ export class EditalAnalysisService {
       let workflowError: string | null = null;
       
       try {
-        console.log('🔄 Obtendo workflow editalAnalysisWorkflow...');
-        const workflow = mastra.getWorkflow('sequentialAnalysisWorkflow'); 
-        console.log('✅ Workflow obtido, criando run...');
+        console.log('🔄 Executando análise sequencial com agentes individuais...');
         
-        const run = await workflow.createRunAsync();
-        console.log('✅ Run criado, iniciando execução...');
+        const threadId = `licitacao_${request.licitacaoId}`;
+        const resourceId = request.empresaCNPJ || 'default-empresa';
         
-        const inputData = { 
-          licitacaoId: request.licitacaoId, 
-          empresaId: request.empresaCNPJ || 'default-empresa', 
-          empresaContext: empresaContext || undefined
+        // Executar agente estratégico
+        console.log('🎯 Executando análise de aderência estratégica...');
+        const strategicResult = await sequentialAgents.strategicFitAgent.generate(
+          `Analise a aderência estratégica da licitação ${request.licitacaoId} com nossa empresa.`,
+          { threadId, resourceId }
+        );
+        
+        const strategicScore = extractScoreFromText(strategicResult.text || "");
+        console.log(`📊 Score estratégico: ${strategicScore}/100`);
+        
+        let finalReport = `# ANÁLISE DE LICITAÇÃO - ${request.licitacaoId}
+
+## RESUMO EXECUTIVO
+- **Licitação ID:** ${request.licitacaoId}
+- **Data da Análise:** ${new Date().toLocaleString('pt-BR')}
+- **Empresa:** ${empresaContext?.nome || 'Empresa não identificada'}
+
+## 1. ANÁLISE DE ADERÊNCIA ESTRATÉGICA
+${strategicResult.text || 'Análise não disponível'}
+
+**Score Aderência:** ${strategicScore}/100
+`;
+
+        if (strategicScore >= 60) {
+          // Executar agente operacional
+          console.log('⚙️ Executando análise operacional...');
+          const operationalResult = await sequentialAgents.operationalAgent.generate(
+            `Analise a capacidade operacional para executar a licitação ${request.licitacaoId}.`,
+            { threadId, resourceId }
+          );
+          
+          const operationalScore = extractScoreFromText(operationalResult.text || "");
+          console.log(`📊 Score operacional: ${operationalScore}/100`);
+          
+          finalReport += `
+
+## 2. ANÁLISE OPERACIONAL
+${operationalResult.text || 'Análise não disponível'}
+
+**Score Operacional:** ${operationalScore}/100
+`;
+          
+          if (operationalScore >= 50) {
+            // Executar agente jurídico
+            console.log('⚖️ Executando análise jurídico-documental...');
+            const legalResult = await sequentialAgents.legalDocAgent.generate(
+              `Analise os aspectos jurídico-documentais da licitação ${request.licitacaoId}.`,
+              { threadId, resourceId }
+            );
+            
+            const legalScore = extractScoreFromText(legalResult.text || "");
+            console.log(`📊 Score jurídico: ${legalScore}/100`);
+            
+            finalReport += `
+
+## 3. ANÁLISE JURÍDICO-DOCUMENTAL
+${legalResult.text || 'Análise não disponível'}
+
+**Score Jurídico:** ${legalScore}/100
+`;
+            
+            if (legalScore >= 40) {
+              // Executar agente financeiro
+              console.log('💰 Executando análise financeira...');
+              const financialResult = await sequentialAgents.financialAgent.generate(
+                `Faça a análise financeira consolidada da licitação ${request.licitacaoId}.`,
+                { threadId, resourceId }
+              );
+              
+              const financialScore = extractScoreFromText(financialResult.text || "");
+              console.log(`📊 Score financeiro: ${financialScore}/100`);
+              
+              finalReport += `
+
+## 4. ANÁLISE FINANCEIRA
+${financialResult.text || 'Análise não disponível'}
+
+**Score Financeiro:** ${financialScore}/100
+
+## SÍNTESE FINAL
+**Scores Obtidos:**
+- Aderência Estratégica: ${strategicScore}/100 (30%)
+- Capacidade Operacional: ${operationalScore}/100 (25%)
+- Situação Jurídica: ${legalScore}/100 (20%)
+- Atratividade Financeira: ${financialScore}/100 (25%)
+
+**Score Consolidado:** ${Math.round(strategicScore * 0.3 + operationalScore * 0.25 + legalScore * 0.2 + financialScore * 0.25)}/100
+
+**RECOMENDAÇÃO:** ${Math.round(strategicScore * 0.3 + operationalScore * 0.25 + legalScore * 0.2 + financialScore * 0.25) >= 70 ? '✅ PARTICIPAR' : '❌ NÃO PARTICIPAR'}
+`;
+            } else {
+              finalReport += `
+
+**WORKFLOW PARADO:** Análise jurídica insuficiente (Score: ${legalScore}/100)
+**RECOMENDAÇÃO:** ❌ NÃO PARTICIPAR - Problemas documentais críticos
+`;
+            }
+          } else {
+            finalReport += `
+
+**WORKFLOW PARADO:** Capacidade operacional insuficiente (Score: ${operationalScore}/100)
+**RECOMENDAÇÃO:** ❌ NÃO PARTICIPAR - Falta de capacidade operacional
+`;
+          }
+        } else {
+          finalReport += `
+
+**WORKFLOW PARADO:** Aderência estratégica insuficiente (Score: ${strategicScore}/100)
+**RECOMENDAÇÃO:** ❌ NÃO PARTICIPAR - Não alinhado com core business
+`;
+        }
+        
+        workflowResult = {
+          status: 'success',
+          result: {
+            finalReport,
+            status: 'completed',
+            validationScore: strategicScore
+          }
         };
-        console.log('📥 InputData:', JSON.stringify({
-          licitacaoId: inputData.licitacaoId,
-          empresaId: inputData.empresaId,
-          empresaContext: empresaContext ? `${empresaContext.nome} (${empresaContext.produtos.length} produtos, ${empresaContext.servicos.length} serviços)` : 'null',
-        }));
-        
-        workflowResult = await run.start({ inputData });
-        console.log('✅ Workflow executado!');
+        console.log('✅ Análise sequencial executada com sucesso!');
         
       } catch (workflowErr: any) {
         console.error('❌ ERRO NO WORKFLOW:', workflowErr);
@@ -293,4 +400,22 @@ export class EditalAnalysisService {
   async isEditalProcessed(licitacaoId: string): Promise<boolean> {
     return await this.ragService.isEditalProcessed(licitacaoId);
   }
+}
+
+/**
+ * Helper function to extract score from agent response text
+ */
+function extractScoreFromText(text: string): number {
+  const scoreMatches = text.match(/(?:SCORE|Score)[\s:]+(\d+)(?:\/100)?/gi);
+  
+  if (scoreMatches && scoreMatches.length > 0) {
+    const lastMatch = scoreMatches[scoreMatches.length - 1];
+    const scoreNumber = lastMatch.match(/(\d+)/);
+    if (scoreNumber) {
+      return Math.min(100, Math.max(0, parseInt(scoreNumber[1])));
+    }
+  }
+  
+  // Fallback: estimate score based on text length and content
+  return Math.max(0, Math.min(100, Math.round(text.length / 50)));
 }
