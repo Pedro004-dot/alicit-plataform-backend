@@ -19,9 +19,9 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.24",
-    "@mastra/core": "^0.15.3",
-    "@mastra/memory": "^0.14.0",
-    "@mastra/pinecone": "^0.11.8",
+    "@mastra/core": "0.15.3",
+    "@mastra/memory": "0.14.0",
+    "@mastra/pinecone": "0.11.8",
     "@mastra/rag": "latest",
     "@mastra/pg": "latest",
     "@pinecone-database/pinecone": "^6.1.2",
