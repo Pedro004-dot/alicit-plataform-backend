@@ -60,8 +60,7 @@ const findWithKeywordAndFilters = async (findRequest) => {
         const licitacoesFiltradas = licitacoes.filter(licitacao => {
             // Campos principais da licitação
             const textoCompleto = `${licitacao.objetoCompra || ''} ${licitacao.informacaoComplementar || ''}`.toLowerCase();
-            // Incluir texto dos itens onde software/tecnologia geralmente aparecem
-            const itensTexto = licitacao.itens?.map(item => `${item.descricao || ''} ${item.materialOuServicoNome || ''} ${item.itemCategoriaNome || ''} ${item.informacaoComplementar || ''}`).join(' ').toLowerCase() || '';
+            const itensTexto = licitacao.itens?.map(item => `${item.descricao || ''} ${item.materialOuServicoNome || ''} ${item.descricao || ''} ${item.descricao || ''}`).join(' ').toLowerCase() || '';
             // Buscar em todos os textos combinados
             const todosTextos = `${textoCompleto} ${itensTexto}`;
             return todosTextos.includes(findRequest.palavraChave.toLowerCase());
