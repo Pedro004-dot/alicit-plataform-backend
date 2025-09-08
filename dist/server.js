@@ -23,8 +23,22 @@ app.use((0, cors_1.default)({
     credentials: true
 }));
 app.use(express_1.default.json());
+// Health check para Vercel
 app.get('/', (req, res) => {
-    res.json({ message: 'Servidor rodando!' });
+    res.json({
+        status: 'ok',
+        message: 'ALICIT Backend API is running',
+        service: 'alicit-backend',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'healthy',
+        service: 'alicit-backend',
+        timestamp: new Date().toISOString()
+    });
 });
 app.use('/licitacoes', licitacaoRoutes_1.default);
 app.use('/licitacoes-documentos', licitacaoDocumentosRoutes_1.default);
@@ -49,7 +63,17 @@ const initializePinecone = async () => {
         console.log('⚠️ Sistema continuará funcionando sem Pinecone - funcionalidades de RAG podem ficar limitadas');
     }
 };
-app.listen(PORT, async () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+// Inicializar Pinecone de forma assíncrona para Vercel
+const initApp = async () => {
     await initializePinecone();
-});
+    return app;
+};
+// Para desenvolvimento local
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, async () => {
+        console.log(`Servidor rodando na porta ${PORT}`);
+        await initializePinecone();
+    });
+}
+// Para Vercel - export default
+exports.default = app;

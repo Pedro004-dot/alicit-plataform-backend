@@ -1,5 +1,5 @@
-// Mastra Vercel entry point
-import { mastra } from './dist/mastra/index.js';
+// Vercel entry point - import Express app
+import app from './dist/server.js';
 
-// Export Mastra instance for Vercel deployment
-export default mastra;
+// Export Express app for Vercel
+export default app;
