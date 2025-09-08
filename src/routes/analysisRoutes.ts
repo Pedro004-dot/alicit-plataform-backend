@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { EditalAnalysisController } from "../controller/edital/analysisController";
-import { EditalChatController } from "../controller/edital/chatController";
-import analiseQueueController from "../controller/edital/analiseQueueController";
-import { authMiddleware } from "../middleware/authMiddleware";
+import { EditalAnalysisController } from "../controller/edital/analysisController.js";
+import { EditalChatController } from "../controller/edital/chatController.js";
+import analiseQueueController from "../controller/edital/analiseQueueController.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = Router();
 const controller = new EditalAnalysisController();

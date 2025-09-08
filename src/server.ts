@@ -5,14 +5,14 @@ import 'dotenv/config';
 
 import express from 'express';
 import cors from 'cors';
-import licitacaoRoutes from './routes/licitacaoRoutes';
-import editalAnalysisRoutes from './routes/analysisRoutes';
-import empresaRoutes from './routes/empresaRoutes';
-import licitacaoDocumentosRoutes from './routes/licitacaoDocumentosRoutes';
-import relatoriosRoutes from './routes/relatoriosRoutes';
-import { PineconeRepository } from './repositories/pineconeRepository';
-import userRoutes from './routes/userRoutes';
-import authRoutes from './routes/authRoutes';
+import licitacaoRoutes from './routes/licitacaoRoutes.js';
+import editalAnalysisRoutes from './routes/analysisRoutes.js';
+import empresaRoutes from './routes/empresaRoutes.js';
+import licitacaoDocumentosRoutes from './routes/licitacaoDocumentosRoutes.js';
+import relatoriosRoutes from './routes/relatoriosRoutes.js';
+import { PineconeRepository } from './repositories/pineconeRepository.js';
+import userRoutes from './routes/userRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 const PORT = 3002;

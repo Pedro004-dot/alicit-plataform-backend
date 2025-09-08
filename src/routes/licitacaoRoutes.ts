@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import licitacaoController from '../controller/licitacao/search_licitacao_controller';
-import findLicitacaoController from '../controller/licitacao/find_licitacao_controller';
-import matchingLicitacaoController from '../controller/licitacao/matching_licitacao_controller';
-import licitacaoEmpresaController from '../controller/licitacao/statusLicitacaoEmpresaController';
-import recomendacaoController from '../controller/licitacao/recomendacaoController';
-import dashboardController from '../controller/licitacao/dashboardController';
-import pineconeDiagnosticController from '../controller/licitacao/pineconeDiagnosticController';
+import licitacaoController from '../controller/licitacao/search_licitacao_controller.js';
+import findLicitacaoController from '../controller/licitacao/find_licitacao_controller.js';
+import matchingLicitacaoController from '../controller/licitacao/matching_licitacao_controller.js';
+import licitacaoEmpresaController from '../controller/licitacao/statusLicitacaoEmpresaController.js';
+import recomendacaoController from '../controller/licitacao/recomendacaoController.js';
+import dashboardController from '../controller/licitacao/dashboardController.js';
+import pineconeDiagnosticController from '../controller/licitacao/pineconeDiagnosticController.js';
 
 const router = Router();    
 // busca novas licitacoes 
