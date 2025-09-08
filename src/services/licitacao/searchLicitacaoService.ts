@@ -22,7 +22,7 @@ const buscarLicitacoes = async (params: SearchLicitacaoInput) => {
     
     const licitacoes = await pncpAdapter.searchLicitacoesPNCP({
         dataFinal: params.dataFim?.replace(/-/g, '')
-    }, 1000); 
+    }, 30000); 
     
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
