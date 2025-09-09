@@ -49,7 +49,7 @@ const searchLicitacoesPNCP = async (params, maxPaginas = 100) => {
     let totalRegistrosAPI = 0;
     console.log(`🚀 Iniciando busca paralela: data=${dataFinal}, maxPaginas=${maxPaginas}, batchSize=${batchSize}`);
     try {
-        while (todasLicitacoes.length < 1000) {
+        while (todasLicitacoes.length < 30000) {
             // Cria batch de URLs para requisições paralelas
             const paginasParaBuscar = [];
             for (let i = 0; i < batchSize && paginaAtual + i <= totalPaginas; i++) {

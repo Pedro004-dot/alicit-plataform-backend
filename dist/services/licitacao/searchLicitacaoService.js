@@ -14,7 +14,7 @@ const buscarLicitacoes = async (params) => {
     const startTime = Date.now();
     const licitacoes = await pncpAdapter_1.default.searchLicitacoesPNCP({
         dataFinal: params.dataFim?.replace(/-/g, '')
-    }, 1000);
+    }, 30000);
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
     console.log(`⚡ Busca paralela concluída em ${duration.toFixed(2)}s: ${licitacoes.length} licitações`);
