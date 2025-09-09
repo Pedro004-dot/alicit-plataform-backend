@@ -214,19 +214,95 @@ class LicitacaoPineconeService {
                 apiKey: process.env.PINECONE_API_KEY
             });
             const index = pinecone.index(this.indexName);
-            // Fazer query para estimar quantidade - buscar todos os vetores possíveis
-            const statsQuery = await index.query({
-                vector: new Array(1536).fill(0.1),
-                topK: 10000, // Máximo permitido
-                includeValues: false,
-                includeMetadata: true
-            });
-            console.log(`🔍 Analisando ${statsQuery.matches?.length || 0} vetores para estatísticas...`);
-            // Separar licitações e editais
-            const licitacoes = statsQuery.matches?.filter(match => match.id?.startsWith('licitacao:') && match.metadata?.numeroControlePNCP) || [];
-            const editais = statsQuery.matches?.filter(match => !match.id?.startsWith('licitacao:')) || [];
-            console.log(`📊 Encontradas: ${licitacoes.length} licitações, ${editais.length} editais`);
-            // Contar por estado (apenas licitações)
+            // 🔧 CORREÇÃO: Usar API nativa de estatísticas para obter total real
+            const indexStats = await index.describeIndexStats();
+            const totalVetoresReal = indexStats.namespaces?.['']?.recordCount || 0;
+            console.log(`📊 ESTATÍSTICAS REAIS DO ÍNDICE:`);
+            console.log(`   Total de registros no Pinecone: ${totalVetoresReal.toLocaleString('pt-BR')}`);
+            console.log(`   Dimensão: ${indexStats.dimension}`);
+            console.log(`   Index fullness: ${indexStats.indexFullness}`);
+            // 🔧 CORREÇÃO: Múltiplas estratégias para capturar o máximo de registros
+            let allMatches = [];
+            const uniqueIds = new Set();
+            console.log(`🔄 Executando múltiplas estratégias para capturar registros...`);
+            // ESTRATÉGIA 1: Múltiplos vetores de consulta variados
+            const queryStrategies = [
+                { name: 'Positivos baixos', vector: new Array(1536).fill(0.1) },
+                { name: 'Positivos médios', vector: new Array(1536).fill(0.3) },
+                { name: 'Positivos altos', vector: new Array(1536).fill(0.7) },
+                { name: 'Negativos baixos', vector: new Array(1536).fill(-0.1) },
+                { name: 'Negativos médios', vector: new Array(1536).fill(-0.3) },
+                { name: 'Misturados', vector: Array.from({ length: 1536 }, (_, i) => (i % 2 === 0 ? 0.2 : -0.2)) },
+                { name: 'Randomicos 1', vector: Array.from({ length: 1536 }, () => Math.random() * 0.4 - 0.2) },
+                { name: 'Randomicos 2', vector: Array.from({ length: 1536 }, () => Math.random() * 0.6 - 0.3) },
+                { name: 'Zeros', vector: new Array(1536).fill(0) },
+                { name: 'Pattern senoidal', vector: Array.from({ length: 1536 }, (_, i) => Math.sin(i * 0.01) * 0.3) }
+            ];
+            for (let strategyIndex = 0; strategyIndex < queryStrategies.length; strategyIndex++) {
+                const strategy = queryStrategies[strategyIndex];
+                try {
+                    console.log(`   Estratégia ${strategyIndex + 1}/${queryStrategies.length}: ${strategy.name}...`);
+                    const statsQuery = await index.query({
+                        vector: strategy.vector,
+                        topK: 10000, // Máximo permitido por query
+                        includeValues: false,
+                        includeMetadata: true
+                    });
+                    if (statsQuery.matches && statsQuery.matches.length > 0) {
+                        let newMatchesCount = 0;
+                        for (const match of statsQuery.matches) {
+                            if (!uniqueIds.has(match.id)) {
+                                uniqueIds.add(match.id);
+                                allMatches.push(match);
+                                newMatchesCount++;
+                            }
+                        }
+                        console.log(`      +${newMatchesCount} novos registros únicos (Total: ${allMatches.length})`);
+                        // Se não conseguimos novos registros únicos, pode ser que já cobrimos esse espaço
+                        if (newMatchesCount === 0 && strategyIndex > 4) {
+                            console.log(`      Espaço vetorial já coberto, pulando estratégias restantes...`);
+                            break;
+                        }
+                    }
+                    // Pequena pausa entre queries
+                    await new Promise(resolve => setTimeout(resolve, 150));
+                }
+                catch (batchError) {
+                    console.warn(`   ⚠️ Erro na estratégia ${strategy.name}:`, batchError);
+                }
+            }
+            // ESTRATÉGIA 2: Consultas com filtros específicos se disponível
+            try {
+                console.log(`   Estratégia adicional: Filtros específicos...`);
+                // Buscar especificamente licitações
+                const licitacaoQuery = await index.query({
+                    vector: new Array(1536).fill(0.1),
+                    topK: 10000,
+                    includeValues: false,
+                    includeMetadata: true,
+                    filter: { numeroControlePNCP: { '$exists': true } }
+                });
+                if (licitacaoQuery.matches) {
+                    let newLicitacoesCount = 0;
+                    for (const match of licitacaoQuery.matches) {
+                        if (!uniqueIds.has(match.id)) {
+                            uniqueIds.add(match.id);
+                            allMatches.push(match);
+                            newLicitacoesCount++;
+                        }
+                    }
+                    console.log(`      +${newLicitacoesCount} licitações adicionais via filtro`);
+                }
+            }
+            catch (filterError) {
+                console.log(`      Filtros não suportados, continuando...`);
+            }
+            console.log(`✅ Coletados ${allMatches.length.toLocaleString('pt-BR')} registros únicos de ${totalVetoresReal.toLocaleString('pt-BR')} total`);
+            // Separar licitações e editais usando a lógica existente
+            const licitacoes = allMatches.filter(match => match.id?.startsWith('licitacao:') && match.metadata?.numeroControlePNCP);
+            const editais = allMatches.filter(match => !match.id?.startsWith('licitacao:'));
+            console.log(`📊 Análise final: ${licitacoes.length.toLocaleString('pt-BR')} licitações, ${editais.length.toLocaleString('pt-BR')} editais`);
+            // Contar por estado (apenas licitações) - lógica existente mantida
             const estadosCount = {};
             const estadosValores = {};
             const estadosModalidades = {};
@@ -264,13 +340,12 @@ class LicitacaoPineconeService {
                 .sort((a, b) => b.totalLicitacoes - a.totalLicitacoes);
             console.log(`🗺️ Estados com licitações: ${Object.keys(estadosCount).length}`);
             // Buscar algumas amostras para mostrar dados
-            const amostras = await this.pineconeRepo.searchSimilar(new Array(1536).fill(0.1), // Vector neutro para buscar qualquer coisa
-            undefined, 10);
+            const amostras = await this.pineconeRepo.searchSimilar(new Array(1536).fill(0.1), undefined, 10);
             return {
-                totalVetores: statsQuery.matches?.length || 0,
+                totalVetores: totalVetoresReal, // 🔧 Usar valor real do índice
                 totalLicitacoes: licitacoes.length,
                 totalEditais: editais.length,
-                dimensao: 1536,
+                dimensao: indexStats.dimension || 1536,
                 indexName: this.indexName,
                 estatisticasPorEstado,
                 amostras: amostras.map(amostra => {
