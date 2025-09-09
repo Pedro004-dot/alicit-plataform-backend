@@ -31,5 +31,4 @@ const searchLicitacao = async (data) => {
         message: `${licitacoes.length} licitações salvas no Pinecone`
     };
 };
-// Não é mais necessário - licitações são salvas diretamente no Pinecone
 exports.default = { searchLicitacao };

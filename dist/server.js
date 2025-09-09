@@ -16,8 +16,6 @@ const relatoriosRoutes_1 = __importDefault(require("./routes/relatoriosRoutes"))
 const pineconeRepository_1 = require("./repositories/pineconeRepository");
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
-const cronRoutes_1 = __importDefault(require("./routes/cronRoutes"));
-const cronService_1 = require("./services/cron/cronService");
 const app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || '3002', 10);
 app.use((0, cors_1.default)({
@@ -49,7 +47,6 @@ app.use('/relatorios', relatoriosRoutes_1.default);
 app.use('/empresa', empresaRoutes_1.default);
 app.use('/user', userRoutes_1.default);
 app.use('/auth', authRoutes_1.default);
-app.use('/cron', cronRoutes_1.default);
 // Error handler para debugging no Vercel
 app.use((error, req, res, next) => {
     console.error('❌ Server Error:', error);
@@ -88,13 +85,6 @@ app.listen(PORT, async () => {
     console.log(`🔗 URL: http://localhost:${PORT}`);
     // Inicializar serviços
     await initializePinecone();
-    // Iniciar cron jobs apenas em produção
-    if (process.env.NODE_ENV === 'production') {
-        cronService_1.cronService.startAllJobs();
-    }
-    else {
-        console.log('⏰ Cron jobs desabilitados em desenvolvimento');
-    }
 });
 // Para Vercel - export default
 exports.default = app;
