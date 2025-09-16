@@ -112,7 +112,7 @@ CMD ["npm", "start"]
 ### Health Check
 ```dockerfile
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3002/health || exit 1
+  CMD curl -f https://alicit-backend-production-ffcd.up.railway.app/health || exit 1
 ```
 
 ## 🐛 Troubleshooting
