@@ -8,20 +8,15 @@ class EmpresaService {
     async buscarEmpresasParaMatching() {
         console.log('🏢 Iniciando busca de empresas para matching em lote...');
         try {
-            // Buscar todas empresas ativas
             const empresas = await empresaRepository_1.default.getAllEmpresas();
-            console.log(empresas);
             if (!empresas || empresas.length === 0) {
                 console.log('⚠️ Nenhuma empresa encontrada no sistema');
                 return [];
             }
-            console.log(`📊 Encontradas ${empresas.length} empresas para processamento`);
             const empresasParaMatching = [];
             for (const empresa of empresas) {
                 try {
                     const perfil = await this.montarPerfilEmpresa(empresa);
-                    // Validar se empresa tem dados mínimos para matching
-                    // Empresa precisa ter pelo menos: termos OU (razão social + descrição) OU palavras-chave
                     const temDadosMinimos = perfil.termosInteresse.length > 0 ||
                         (perfil.razaoSocial && perfil.descricao) ||
                         perfil.palavrasChave;
@@ -52,7 +47,6 @@ class EmpresaService {
     async montarPerfilEmpresa(empresa) {
         console.log(`🔧 Montando perfil para empresa: ${empresa.nome}`);
         const perfil = {
-            // === IDENTIFICAÇÃO ===
             id: empresa.id,
             cnpj: empresa.cnpj,
             nome: empresa.nome,

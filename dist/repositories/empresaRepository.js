@@ -129,24 +129,36 @@ const getEmpresaById = async (id) => {
         tipoConta: dadosBancarios?.tipo_conta || ''
     };
 };
+// dentro de getEmpresaByCnpj
 const getEmpresaByCnpj = async (cnpj) => {
+    const clean = cnpj.replace(/\D/g, '');
+    // tenta bater tanto com a forma limpa quanto com a mascarada
     const { data, error } = await supabase
         .from('empresas')
         .select(`
-            *,
-            dados_bancarios(
-                agencia,
-                numero_conta,
-                nome_titular,
-                banco,
-                tipo_conta
-            )
-        `)
-        .eq('cnpj', cnpj)
-        .single();
+        *,
+        dados_bancarios(
+          agencia,
+          numero_conta,
+          nome_titular,
+          banco,
+          tipo_conta
+        ),
+        empresa_produtos(produto),
+        empresa_servicos(servico),
+        empresa_documentos(
+          nome_documento,
+          descricao,
+          data_vencimento,
+          status_documento
+        )
+      `)
+        .or(`cnpj.eq.${clean},cnpj.eq.${cnpj}`)
+        .maybeSingle();
     if (error)
         throw error;
-    // Transformar dados bancários para estrutura flat
+    if (!data)
+        return null;
     const dadosBancarios = data.dados_bancarios?.[0];
     return {
         ...data,
@@ -154,7 +166,9 @@ const getEmpresaByCnpj = async (cnpj) => {
         numeroConta: dadosBancarios?.numero_conta || '',
         nomeTitular: dadosBancarios?.nome_titular || '',
         banco: dadosBancarios?.banco || '',
-        tipoConta: dadosBancarios?.tipo_conta || ''
+        tipoConta: dadosBancarios?.tipo_conta || '',
+        faturamento: data.faturamento ?? null, // ajuste conforme onde de fato está
+        capitalSocial: data.capitalSocial ?? null // ajuste conforme onde de fato está
     };
 };
 const updateEmpresa = async (id, empresaData) => {

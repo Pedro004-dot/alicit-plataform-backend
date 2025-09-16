@@ -18,6 +18,14 @@ export {
   extractDadosFinanceirosLicitacao 
 } from "./pineconeLicitacaoTool";
 
+// Vector Query Tools específicas por agente (Mastra RAG)
+export { 
+  strategicVectorTool,
+  operationalVectorTool, 
+  legalVectorTool,
+  financialVectorTool
+} from "./vectorQueryTools";
+
 // Re-exportar todas as tools em um objeto para facilitar uso
 import { queryEditalDatabase } from "./queryEditalTool";
 import { summarizeText } from "./summarizeTextTool";
@@ -33,6 +41,12 @@ import {
   extractObjetoLicitacao,
   extractDadosFinanceirosLicitacao 
 } from "./pineconeLicitacaoTool";
+import { 
+  strategicVectorTool,
+  operationalVectorTool,
+  legalVectorTool,
+  financialVectorTool
+} from "./vectorQueryTools";
 
 export const mastraTools = {
   // Tools Essenciais
@@ -52,6 +66,12 @@ export const mastraTools = {
   pineconeLicitacao,
   extractObjetoLicitacao,
   extractDadosFinanceirosLicitacao,
+  
+  // Vector Query Tools (Mastra RAG)
+  strategicVectorTool,
+  operationalVectorTool,
+  legalVectorTool,
+  financialVectorTool,
 } as const;
 
 export type MastraToolsType = typeof mastraTools;

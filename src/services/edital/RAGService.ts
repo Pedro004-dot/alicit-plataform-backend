@@ -40,7 +40,7 @@ export class EditalRAGService {
     const { licitacaoId, empresaId } = request;
 
     const alreadyProcessed = await this.vectorStorage.isEditalProcessed(licitacaoId);
-    
+    //se o documento ja foi processado, puxa os vetores
     if (alreadyProcessed) {
       console.log(`✅ Edital ${licitacaoId} já processado, carregando embeddings existentes...`);
       await this.vectorStorage.loadEmbeddings(licitacaoId);
@@ -53,29 +53,22 @@ export class EditalRAGService {
       };
     }
 
-    console.log(`🔧 Processando edital ${licitacaoId} pela primeira vez...`);
 
     let documentsToProcess: DocumentFile[];
 
-    if (request.documents && request.documents.length > 0) {
-      console.log(`📄 Usando ${request.documents.length} documentos fornecidos localmente`);
-      documentsToProcess = request.documents;
-    } else {
-      console.log(`📥 Processando documentos para licitação ${licitacaoId}...`);
-      try {
+    try {
+      
         documentsToProcess = await this.licitacaoDocumentosService.processarDocumentosLicitacao(licitacaoId);
         
         if (!documentsToProcess || documentsToProcess.length === 0) {
           throw new Error(`Nenhum documento encontrado para ${licitacaoId}`);
-        }
-        
-        console.log(`📥 ${documentsToProcess.length} documento(s) obtido(s) para processamento`);
+        }    
         
       } catch (downloadError) {
         console.error(`❌ Erro ao processar documentos:`, downloadError);
         throw new Error(`Falha ao processar documentos da licitação: ${downloadError}`);
       }
-    }
+    
 
     // Preparar request para processDocuments com os documentos corretos
     const processRequest = {
@@ -85,8 +78,7 @@ export class EditalRAGService {
     
     // 1. Extrair texto dos documentos
     const editalDocuments = await processDocuments(processRequest);
-    console.log(`📋 Documentos processados: ${editalDocuments.length}`);
-    console.log(`📊 Total caracteres extraídos: ${editalDocuments.reduce((sum, doc) => sum + doc.text.length, 0)}`);
+   
     
     // 2. Chunking hierárquico
     const chunks = await chunkDocuments(editalDocuments);

@@ -12,7 +12,6 @@ const empresaService_1 = __importDefault(require("../../services/empresa/empresa
  */
 const calculateMatching = async (req, res) => {
     const inicioProcessamento = Date.now();
-    console.log('🚀 Iniciando processamento de matching em lote para todas as empresas...');
     try {
         // Buscar todas as empresas preparadas para matching
         const empresas = await empresaService_1.default.buscarEmpresasParaMatching();
@@ -74,11 +73,6 @@ const calculateMatching = async (req, res) => {
             }
         }
         const tempoTotal = Date.now() - inicioProcessamento;
-        console.log('\n📊 RESUMO DO PROCESSAMENTO EM LOTE:');
-        console.log(`✅ Empresas processadas com sucesso: ${sucessos}`);
-        console.log(`❌ Empresas com falha: ${falhas}`);
-        console.log(`📈 Total de recomendações criadas: ${totalRecomendacoesCriadas}`);
-        console.log(`⏱️ Tempo total de processamento: ${tempoTotal}ms`);
         return res.status(200).json({
             success: true,
             message: 'Processamento de matching em lote concluído',
@@ -102,4 +96,3 @@ const calculateMatching = async (req, res) => {
     }
 };
 exports.default = { calculateMatching };
-// Objetivo: Processar matching de licitações em lote para TODAS as empresas cadastradas no sistema

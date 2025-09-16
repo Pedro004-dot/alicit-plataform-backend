@@ -10,7 +10,7 @@ import { MatchResult } from "../../services/licitacao/metrics/types";
  */
 const calculateMatching = async (req: Request, res: Response) => {
   const inicioProcessamento = Date.now();
-  console.log('🚀 Iniciando processamento de matching em lote para todas as empresas...');
+
   
   try {
     // Buscar todas as empresas preparadas para matching
@@ -84,12 +84,6 @@ const calculateMatching = async (req: Request, res: Response) => {
     }
 
     const tempoTotal = Date.now() - inicioProcessamento;
-    
-    console.log('\n📊 RESUMO DO PROCESSAMENTO EM LOTE:');
-    console.log(`✅ Empresas processadas com sucesso: ${sucessos}`);
-    console.log(`❌ Empresas com falha: ${falhas}`);
-    console.log(`📈 Total de recomendações criadas: ${totalRecomendacoesCriadas}`);
-    console.log(`⏱️ Tempo total de processamento: ${tempoTotal}ms`);
 
     return res.status(200).json({
       success: true,
@@ -115,5 +109,3 @@ const calculateMatching = async (req: Request, res: Response) => {
 };
 
 export default { calculateMatching };
-
-// Objetivo: Processar matching de licitações em lote para TODAS as empresas cadastradas no sistema

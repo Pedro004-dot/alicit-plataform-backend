@@ -19,6 +19,7 @@ class EditalRAGService {
     async processEdital(request) {
         const { licitacaoId, empresaId } = request;
         const alreadyProcessed = await this.vectorStorage.isEditalProcessed(licitacaoId);
+        //se o documento ja foi processado, puxa os vetores
         if (alreadyProcessed) {
             console.log(`✅ Edital ${licitacaoId} já processado, carregando embeddings existentes...`);
             await this.vectorStorage.loadEmbeddings(licitacaoId);
@@ -30,25 +31,16 @@ class EditalRAGService {
                 chunksCount: 293, // TODO: Buscar valor real do Redis
             };
         }
-        console.log(`🔧 Processando edital ${licitacaoId} pela primeira vez...`);
         let documentsToProcess;
-        if (request.documents && request.documents.length > 0) {
-            console.log(`📄 Usando ${request.documents.length} documentos fornecidos localmente`);
-            documentsToProcess = request.documents;
+        try {
+            documentsToProcess = await this.licitacaoDocumentosService.processarDocumentosLicitacao(licitacaoId);
+            if (!documentsToProcess || documentsToProcess.length === 0) {
+                throw new Error(`Nenhum documento encontrado para ${licitacaoId}`);
+            }
         }
-        else {
-            console.log(`📥 Processando documentos para licitação ${licitacaoId}...`);
-            try {
-                documentsToProcess = await this.licitacaoDocumentosService.processarDocumentosLicitacao(licitacaoId);
-                if (!documentsToProcess || documentsToProcess.length === 0) {
-                    throw new Error(`Nenhum documento encontrado para ${licitacaoId}`);
-                }
-                console.log(`📥 ${documentsToProcess.length} documento(s) obtido(s) para processamento`);
-            }
-            catch (downloadError) {
-                console.error(`❌ Erro ao processar documentos:`, downloadError);
-                throw new Error(`Falha ao processar documentos da licitação: ${downloadError}`);
-            }
+        catch (downloadError) {
+            console.error(`❌ Erro ao processar documentos:`, downloadError);
+            throw new Error(`Falha ao processar documentos da licitação: ${downloadError}`);
         }
         // Preparar request para processDocuments com os documentos corretos
         const processRequest = {
@@ -57,8 +49,6 @@ class EditalRAGService {
         };
         // 1. Extrair texto dos documentos
         const editalDocuments = await (0, processDocuments_1.processDocuments)(processRequest);
-        console.log(`📋 Documentos processados: ${editalDocuments.length}`);
-        console.log(`📊 Total caracteres extraídos: ${editalDocuments.reduce((sum, doc) => sum + doc.text.length, 0)}`);
         // 2. Chunking hierárquico
         const chunks = await (0, chunkDocuments_1.chunkDocuments)(editalDocuments);
         console.log(`🔧 Chunks criados: ${chunks.length}`);

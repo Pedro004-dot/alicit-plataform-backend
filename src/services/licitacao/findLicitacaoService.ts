@@ -3,63 +3,6 @@ import { calculateMatchingScore, EmpresaPerfil, PNCPLicitacao, MatchResult } fro
 import { clearCoordenadasCache, clearCidadesRaioCache } from './geolocation';
 import { aplicarFiltrosAtivos } from './filters';
 
-/**
- * Busca todas as licitações armazenadas no Pinecone
- * @returns Array de licitações válidas
- */
-const findLicitacao = async (): Promise<PNCPLicitacao[]> => {
-  return await pineconeLicitacaoRepository.getAllLicitacoes();
-};
-
-/**
- * Calcula matching entre perfil da empresa e licitações usando algoritmos tradicionais
- * @param empresaPerfil - Perfil da empresa com critérios de busca
- * @returns Array de resultados ordenados por score descendente
- */
-
-const calculateMatching = async (empresaPerfil: EmpresaPerfil): Promise<MatchResult[]> => {
-  try {
-    console.log('📊 Iniciando matching tradicional...');
-    
-    // Buscar todas as licitações
-    const licitacoes = await findLicitacao();
-    console.log(`🔍 Encontradas ${licitacoes.length} licitações para análise`);
-    
-    // Aplicar filtros
-    const resultadoFiltros = await aplicarFiltrosAtivos(licitacoes, empresaPerfil);
-    
-    console.log(`🔍 Filtros aplicados: ${resultadoFiltros.filtrosAplicados.join(', ') || 'nenhum'}`);
-    console.log(`📊 ${resultadoFiltros.estatisticas.totalInicial} → ${resultadoFiltros.estatisticas.totalFinal} licitações (${resultadoFiltros.estatisticas.reducaoPercentual}% filtradas)`);
-    
-    // Calcular matching scores
-    const matches = resultadoFiltros.licitacoesFiltradas
-      .map(licitacao => calculateMatchingScore(empresaPerfil, licitacao))
-      .filter(match => match.matchScore > 0.1)
-      .sort((a, b) => b.matchScore - a.matchScore);
-    
-    console.log(`✅ Matching tradicional concluído: ${matches.length} resultados finais`);
-    return matches;
-    
-  } catch (error) {
-    console.error('❌ Erro no matching tradicional:', error);
-    return [];
-  }
-};
-
-/**
- * Limpa todos os caches de coordenadas e raio
- */
-const clearGeographicCache = () => {
-  clearCoordenadasCache();
-  clearCidadesRaioCache();
-  console.log('🧹 Cache geográfico limpo');
-};
-
-/**
- * Busca licitações com palavra-chave e filtros (busca manual)
- * @param findRequest - Request com palavra-chave e filtros
- * @returns Array de licitações filtradas
- */
 interface FindRequest {
   cnpj: string;
   palavraChave: string;
@@ -70,13 +13,11 @@ interface FindRequest {
   dataFim?: string;
   fonte?: string;
 }
+
 const findWithKeywordAndFilters = async (findRequest: FindRequest): Promise<PNCPLicitacao[]> => {
   try {
-    console.log('🔍 Iniciando busca manual com filtros...');
-    
     // Buscar todas as licitações
-    const licitacoes = await findLicitacao();
-    console.log(`📊 Encontradas ${licitacoes.length} licitações para análise`);
+    const licitacoes = await pineconeLicitacaoRepository.getAllLicitacoes()
     
     // Filtrar por palavra-chave - busca em todos os campos relevantes
     const licitacoesFiltradas = licitacoes.filter(licitacao => {
@@ -92,8 +33,6 @@ const findWithKeywordAndFilters = async (findRequest: FindRequest): Promise<PNCP
       return todosTextos.includes(findRequest.palavraChave.toLowerCase());
     });
     
-    console.log(`🔍 ${licitacoesFiltradas.length} licitações encontradas com palavra-chave "${findRequest.palavraChave}"`);
-    
     // Criar perfil empresa para usar filtros existentes
     const empresaPerfil: EmpresaPerfil = {  
       cnpj: findRequest.cnpj,
@@ -103,10 +42,12 @@ const findWithKeywordAndFilters = async (findRequest: FindRequest): Promise<PNCP
     };
     
     // Aplicar filtros usando função existente
-    const resultadoFiltros = await aplicarFiltrosAtivos(licitacoesFiltradas, empresaPerfil);
+    // const resultadoFiltros = await aplicarFiltrosAtivos(licitacoesFiltradas, empresaPerfil);
     
-    console.log(`✅ Busca manual concluída: ${resultadoFiltros.licitacoesFiltradas.length} resultados finais`);
-    return resultadoFiltros.licitacoesFiltradas;
+    // console.log(`✅ Busca manual concluída: ${resultadoFiltros.licitacoesFiltradas.length} resultados finais`);
+    // return resultadoFiltros.licitacoesFiltradas;
+    console.log(`✅ Busca manual concluída: ${licitacoesFiltradas.length} resultados finais`);
+    return licitacoesFiltradas;
     
   } catch (error) {
     console.error('❌ Erro na busca manual:', error);
@@ -114,8 +55,13 @@ const findWithKeywordAndFilters = async (findRequest: FindRequest): Promise<PNCP
   }
 };
 
+const clearGeographicCache = () => {
+  clearCoordenadasCache();
+  clearCidadesRaioCache();
+  console.log('🧹 Cache geográfico limpo');
+};
+
 export default { 
-  calculateMatching,
   findWithKeywordAndFilters,
   clearCache: pineconeLicitacaoRepository.clearAllCaches,
   clearGeographicCache

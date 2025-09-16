@@ -5,7 +5,8 @@ const workflows_1 = require("@mastra/core/workflows");
 const zod_1 = require("zod");
 const sequential_1 = require("../agents/sequential");
 // import { sequentialWorkflowMemory } from "../config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
-// Schema de entrada do workflow
+const di_1 = require("@mastra/core/di");
+const updateWorkingMemoryTool_1 = require("../tools/updateWorkingMemoryTool");
 const sequentialInputSchema = zod_1.z.object({
     licitacaoId: zod_1.z.string().describe("ID da licitação para análise"),
     empresaId: zod_1.z.string().describe("ID da empresa cliente"),
@@ -18,10 +19,19 @@ const sequentialInputSchema = zod_1.z.object({
         servicos: zod_1.z.array(zod_1.z.string()),
         localizacao: zod_1.z.string(),
         capacidadeOperacional: zod_1.z.string(),
+        // Novos campos financeiros
+        faturamento: zod_1.z.number().optional(),
+        capitalSocial: zod_1.z.number().optional(),
+        // Lista de certificações/documentos
+        certificacoes: zod_1.z.array(zod_1.z.object({
+            nome: zod_1.z.string(),
+            descricao: zod_1.z.string().optional(),
+            dataVencimento: zod_1.z.string().optional(),
+            status: zod_1.z.string().optional(),
+        })),
         documentosDisponiveis: zod_1.z.record(zod_1.z.any()).optional(),
     }).optional(),
 });
-// Schema de saída do workflow
 const sequentialOutputSchema = zod_1.z.object({
     decision: zod_1.z.enum(["PARTICIPAR", "NAO_PARTICIPAR"]).describe("Decisão final"),
     consolidatedScore: zod_1.z.number().min(0).max(100).describe("Score consolidado final"),
@@ -51,11 +61,9 @@ const sequentialAnalysisStep = (0, workflows_1.createStep)({
     execute: async ({ inputData }) => {
         const { licitacaoId, empresaId, empresaContext } = inputData;
         const startTime = Date.now();
-        console.log(`🚀 Iniciando análise sequencial - Licitação: ${licitacaoId}`);
-        console.log('📋 DADOS COMPLETOS RECEBIDOS PELO WORKFLOW:');
-        console.log('  licitacaoId:', licitacaoId);
-        console.log('  empresaId:', empresaId);
-        console.log('  empresaContext:', typeof empresaContext === 'object' ? JSON.stringify(empresaContext, null, 2) : empresaContext);
+        // Reset scores capturados no início
+        (0, updateWorkingMemoryTool_1.resetCapturedScores)();
+        console.log(`🔄 [WORKFLOW] Scores resetados para nova análise`);
         const threadId = `licitacao_${licitacaoId}`;
         let agentsExecuted = 0;
         let stoppedAt = "strategic";
@@ -67,52 +75,62 @@ const sequentialAnalysisStep = (0, workflows_1.createStep)({
         };
         try {
             // ETAPA 1: Aderência Estratégica
-            console.log(`🎯 Executando análise de aderência estratégica`);
-            console.log('🤖 DADOS PASSADOS PARA O AGENTE ESTRATÉGICO:');
-            console.log('  threadId:', threadId);
-            console.log('  resourceId:', empresaId);
-            console.log('  prompt: "Analise a aderência estratégica da licitação', licitacaoId, 'com nossa empresa."');
-            const strategicResult = await sequential_1.sequentialAgents.strategicFitAgent.generate(`Analise a aderência estratégica da licitação ${licitacaoId} com nossa empresa.`, { threadId, resourceId: empresaId });
-            console.log('📝 RESPOSTA COMPLETA DO AGENTE ESTRATÉGICO:');
-            console.log('  texto completo:', strategicResult.text?.substring(0, 300) + '...');
-            console.log('  tool calls:', strategicResult.toolCalls?.length || 0);
-            scores.strategic = extractScoreFromAnalysis(strategicResult.text || "");
+            // Criar RuntimeContext com dados da empresa e licitação
+            const runtimeContext = new di_1.RuntimeContext();
+            if (empresaContext) {
+                runtimeContext.set('empresaContext', empresaContext);
+            }
+            runtimeContext.set('licitacaoId', licitacaoId);
+            const strategicResult = await sequential_1.sequentialAgents.strategicFitAgent.generate(`Analise a aderência estratégica da licitação ${licitacaoId} com nossa empresa.`, {
+                threadId,
+                resourceId: empresaId,
+                runtimeContext
+            });
+            console.log(`📝 [STRATEGIC] Resposta do agente: ${(strategicResult.text || "").substring(0, 200)}...`);
+            scores.strategic = await extractScoreWithWorkingMemoryFallback(strategicResult.text || "", threadId, empresaId, 'strategic');
             agentsExecuted = 1;
+            console.log(`📊 [STRATEGIC] Score extraído: ${scores.strategic}/100`);
             console.log(`📊 Score aderência: ${scores.strategic}/100`);
             if (scores.strategic < 60) {
                 console.log(`❌ Workflow parado na aderência estratégica`);
                 return createStoppedResult("strategic", scores, agentsExecuted, "Score estratégico insuficiente", startTime);
             }
             // ETAPA 2: Análise Operacional
-            console.log(`⚙️ Executando análise operacional`);
             stoppedAt = "operational";
-            const operationalResult = await sequential_1.sequentialAgents.operationalAgent.generate(`Analise a capacidade operacional para executar a licitação ${licitacaoId}.`, { threadId, resourceId: empresaId });
+            const operationalResult = await sequential_1.sequentialAgents.operationalAgent.generate(`Analise a capacidade operacional para executar a licitação ${licitacaoId}.`, {
+                threadId,
+                resourceId: empresaId,
+                runtimeContext
+            });
             scores.operational = extractScoreFromAnalysis(operationalResult.text || "");
             agentsExecuted = 2;
-            console.log(`📊 Score operacional: ${scores.operational}/100`);
             if (scores.operational < 50) {
                 console.log(`❌ Workflow parado na análise operacional`);
                 return createStoppedResult("operational", scores, agentsExecuted, "Score operacional insuficiente", startTime);
             }
             // ETAPA 3: Análise Jurídico-Documental
-            console.log(`⚖️ Executando análise jurídico-documental`);
             stoppedAt = "legal";
-            const legalResult = await sequential_1.sequentialAgents.legalDocAgent.generate(`Analise os aspectos jurídico-documentais da licitação ${licitacaoId}.`, { threadId, resourceId: empresaId });
+            const legalResult = await sequential_1.sequentialAgents.legalDocAgent.generate(`Analise os aspectos jurídico-documentais da licitação ${licitacaoId}.`, {
+                threadId,
+                resourceId: empresaId,
+                runtimeContext
+            });
             scores.legal = extractScoreFromAnalysis(legalResult.text || "");
             agentsExecuted = 3;
-            console.log(`📊 Score jurídico: ${scores.legal}/100`);
             if (scores.legal < 40) {
                 console.log(`❌ Workflow parado na análise jurídica`);
                 return createStoppedResult("legal", scores, agentsExecuted, "Score jurídico insuficiente", startTime);
             }
             // ETAPA 4: Análise Financeira
-            console.log(`💰 Executando análise financeira`);
             stoppedAt = "financial";
-            const financialResult = await sequential_1.sequentialAgents.financialAgent.generate(`Faça a análise financeira consolidada da licitação ${licitacaoId}.`, { threadId, resourceId: empresaId });
+            const financialResult = await sequential_1.sequentialAgents.financialAgent.generate(`Faça a análise financeira consolidada da licitação ${licitacaoId}.`, {
+                threadId,
+                resourceId: empresaId,
+                runtimeContext
+            });
             scores.financial = extractScoreFromAnalysis(financialResult.text || "");
             agentsExecuted = 4;
             stoppedAt = "completed";
-            console.log(`📊 Score financeiro: ${scores.financial}/100`);
             // SÍNTESE FINAL
             const consolidatedScore = calculateConsolidatedScore(scores);
             const decision = consolidatedScore >= 70 ? "PARTICIPAR" : "NAO_PARTICIPAR";
@@ -123,7 +141,6 @@ const sequentialAnalysisStep = (0, workflows_1.createStep)({
                 scores,
             });
             const totalTime = Date.now() - startTime;
-            console.log(`🎉 Análise concluída - Decisão: ${decision} (Score: ${consolidatedScore}/100)`);
             return {
                 decision: decision,
                 consolidatedScore,
@@ -137,7 +154,8 @@ const sequentialAnalysisStep = (0, workflows_1.createStep)({
             };
         }
         catch (error) {
-            console.error(`❌ Erro na análise sequencial: ${error}`);
+            // Rate limit será tratado pelos agentes com fallback de modelo
+            // Aqui só tratamos erros irrecuperáveis
             return createStoppedResult(stoppedAt === "completed" ? "financial" : stoppedAt, scores, agentsExecuted, `Erro na execução: ${error}`, startTime);
         }
     }
@@ -177,16 +195,73 @@ function createStoppedResult(stoppedAt, scores, agentsExecuted, reason, startTim
         }
     };
 }
+// Score extraction com fallback para working memory
+async function extractScoreWithWorkingMemoryFallback(analysis, threadId, resourceId, agentType) {
+    console.log(`🔍 [EXTRACT SCORE] Tentando extrair score de ${analysis.length} caracteres para agente ${agentType}`);
+    // Primeiro tenta extrair do texto da resposta
+    const textScore = extractScoreFromAnalysis(analysis);
+    if (textScore > 0) {
+        console.log(`✅ [EXTRACT SCORE] Score extraído do texto: ${textScore}/100`);
+        return textScore;
+    }
+    console.log(`⚠️ [EXTRACT SCORE] Score não encontrado no texto (length: ${analysis.length})`);
+    // Fallback: usar score capturado da working memory
+    const capturedScore = updateWorkingMemoryTool_1.capturedScores[agentType];
+    if (capturedScore > 0) {
+        console.log(`✅ [WORKING MEMORY FALLBACK] Score ${agentType} encontrado: ${capturedScore}/100`);
+        return capturedScore;
+    }
+    console.log(`❌ [EXTRACT SCORE] Nenhum score encontrado para ${agentType} - usando fallback conservador`);
+    return 0;
+}
 function extractScoreFromAnalysis(analysis) {
-    const scoreMatches = analysis.match(/(?:SCORE|Score)[\s:]+(\d+)(?:\/100)?/gi);
-    if (scoreMatches && scoreMatches.length > 0) {
-        const lastMatch = scoreMatches[scoreMatches.length - 1];
-        const scoreNumber = lastMatch.match(/(\d+)/);
-        if (scoreNumber) {
-            return Math.min(100, Math.max(0, parseInt(scoreNumber[1])));
+    console.log(`🔍 [EXTRACT SCORE] Analisando texto de ${analysis.length} caracteres`);
+    console.log(`🔍 [EXTRACT SCORE] Primeiros 300 chars: ${analysis.substring(0, 300)}...`);
+    // PADRÃO 1: Buscar score final específico (mais rigoroso)
+    const finalScorePatterns = [
+        /SCORE DE ADEQUAÇÃO:\s*(\d+)\/100/gi,
+        /Score de adequação:\s*(\d+)\/100/gi,
+        /#### SCORE DE ADEQUAÇÃO:\s*(\d+)\/100/gi,
+        /Score final:\s*(\d+)\/100/gi,
+        /Pontuação final:\s*(\d+)\/100/gi
+    ];
+    for (const pattern of finalScorePatterns) {
+        const matches = analysis.match(pattern);
+        if (matches && matches.length > 0) {
+            const lastMatch = matches[matches.length - 1];
+            const scoreNumber = lastMatch.match(/(\d+)/);
+            if (scoreNumber) {
+                const score = Math.min(100, Math.max(0, parseInt(scoreNumber[1])));
+                console.log(`✅ [EXTRACT SCORE] Score FINAL encontrado: ${score}/100 via padrão específico`);
+                return score;
+            }
         }
     }
-    return Math.max(0, Math.min(100, Math.round(analysis.length / 50)));
+    // PADRÃO 2: Buscar qualquer "X/100" mas pegar o ÚLTIMO (não o primeiro)
+    const allScoreMatches = analysis.match(/(\d+)\/100/gi);
+    if (allScoreMatches && allScoreMatches.length > 0) {
+        // Pegar o ÚLTIMO match (score final, não intermediário)
+        const lastMatch = allScoreMatches[allScoreMatches.length - 1];
+        const scoreNumber = lastMatch.match(/(\d+)/);
+        if (scoreNumber) {
+            const score = Math.min(100, Math.max(0, parseInt(scoreNumber[1])));
+            console.log(`✅ [EXTRACT SCORE] Score encontrado (último): ${score}/100 de ${allScoreMatches.length} matches`);
+            console.log(`📝 [EXTRACT SCORE] Todos os matches: ${allScoreMatches.join(', ')}`);
+            return score;
+        }
+    }
+    // PADRÃO 3: Buscar working memory
+    if (analysis.includes("score:")) {
+        const workingMemoryScore = analysis.match(/score:\s*(\d+)/i);
+        if (workingMemoryScore) {
+            const score = parseInt(workingMemoryScore[1]);
+            console.log(`✅ [EXTRACT SCORE] Score encontrado no working memory: ${score}/100`);
+            return Math.min(100, Math.max(0, score));
+        }
+    }
+    console.log(`❌ [EXTRACT SCORE] Nenhum score encontrado, usando fallback`);
+    console.log(`🔍 [EXTRACT SCORE] Últimos 300 chars: ...${analysis.substring(analysis.length - 300)}`);
+    return Math.max(20, Math.min(100, Math.round(analysis.length / 50))); // Fallback mais generoso
 }
 function calculateConsolidatedScore(scores) {
     return Math.round((scores.strategic * 0.30) +
@@ -242,27 +317,15 @@ function generateDetailedStoppedReport(data) {
 
 ## INFORMAÇÕES GERAIS
 - **Data da Análise:** ${new Date().toLocaleString('pt-BR')}
-- **Sistema:** Workflow Sequencial Alicit v2.0
-- **Tempo de Execução:** ${(executionTime / 1000).toFixed(1)}s
-- **Agentes Executados:** ${agentsExecuted}/4
 
 ## DECISÃO FINAL
 ### ❌ RECOMENDAÇÃO: NÃO PARTICIPAR
 **Motivo:** Análise interrompida na etapa de ${stageName}
 
-## ANÁLISE DETALHADA
-
-### Etapa Analisada: ${stageName}
-- **Score Obtido:** ${scores[stoppedAt]}/100
-- **Critério de Aprovação:** ${getStageThreshold(stoppedAt)}/100
-- **Status:** ❌ REPROVADO
-- **Motivo:** ${reason}
 
 ### Por que a Análise foi Interrompida?
 ${getStageExplanation(stoppedAt, scores[stoppedAt])}
 
-### Etapas Não Analisadas:
-${getUnanalyzedStages(stoppedAt)}
 
 ## SCORES ATUAIS
 - **Aderência Estratégica:** ${scores.strategic || 0}/100 ${scores.strategic ? '✅' : '⏭️'}
@@ -272,85 +335,26 @@ ${getUnanalyzedStages(stoppedAt)}
 
 **Score Parcial:** ${partialScore}/100
 
-## RECOMENDAÇÕES
-${getRecommendations(stoppedAt, scores[stoppedAt])}
-
 ---
 *Relatório gerado pelo Sistema de Agentes Especialistas da Alicit*
-*Análise interrompida para otimizar tempo e recursos*
 `;
 }
 /**
- * Retorna threshold mínimo para cada etapa
+
+
+/**
+ * Sistema de fallback de modelos agora previne rate limits
+ * Esta função foi removida pois rate limits são tratados pelos agentes
  */
-function getStageThreshold(stage) {
-    const thresholds = {
-        strategic: 60,
-        operational: 50,
-        legal: 40,
-        financial: 30
-    };
-    return thresholds[stage] || 0;
-}
 /**
  * Explica por que a análise foi interrompida em cada etapa
  */
 function getStageExplanation(stage, score) {
     const explanations = {
-        strategic: `O score de aderência estratégica (${score}/100) indica que a licitação não está alinhada com o core business da sua empresa. Continuar a análise seria pouco produtivo, pois mesmo com scores altos nas outras etapas, a falta de aderência estratégica torna a participação pouco vantajosa.`,
-        operational: `O score de capacidade operacional (${score}/100) sugere que sua empresa não tem recursos suficientes para executar este contrato adequadamente. Prosseguir com a análise não é recomendado, pois limitações operacionais podem comprometer a execução e gerar riscos contratuais.`,
-        legal: `O score jurídico-documental (${score}/100) indica problemas significativos na documentação ou requisitos legais. Participar desta licitação sem resolver essas questões pode resultar em desclassificação ou problemas contratuais posteriores.`,
-        financial: `O score financeiro (${score}/100) mostra que as condições econômicas da licitação não são atrativas para sua empresa. O investimento de tempo e recursos para participar pode não compensar o retorno esperado.`
+        strategic: `O score de aderência estratégica (${score}/100) indica que a licitação não está alinhada com o core business da sua empresa.`,
+        operational: `O score de capacidade operacional (${score}/100) sugere que sua empresa não tem recursos suficientes para executar este contrato adequadamente.`,
+        legal: `O score jurídico-documental (${score}/100) indica problemas significativos na documentação ou requisitos legais.`,
+        financial: `O score financeiro (${score}/100) mostra que as condições econômicas da licitação não são atrativas para sua empresa.`
     };
     return explanations[stage] || "Score insuficiente para prosseguir com a análise.";
-}
-/**
- * Lista etapas que não foram analisadas
- */
-function getUnanalyzedStages(stoppedAt) {
-    const allStages = {
-        strategic: "Aderência Estratégica",
-        operational: "Capacidade Operacional",
-        legal: "Situação Jurídico-Documental",
-        financial: "Atratividade Financeira"
-    };
-    const stageOrder = ["strategic", "operational", "legal", "financial"];
-    const stoppedIndex = stageOrder.indexOf(stoppedAt);
-    if (stoppedIndex === -1 || stoppedIndex === stageOrder.length - 1) {
-        return "- Nenhuma (todas as etapas foram analisadas)";
-    }
-    const unanalyzed = stageOrder.slice(stoppedIndex + 1);
-    return unanalyzed.map(stage => `- ${allStages[stage]}`).join("\n");
-}
-/**
- * Gera recomendações específicas baseadas na etapa e score
- */
-function getRecommendations(stage, score) {
-    const recommendations = {
-        strategic: `
-### Para Futuras Licitações:
-1. **Foque em licitações mais alinhadas** com seus produtos/serviços principais
-2. **Diversifique gradualmente** seu portfólio se quiser expandir para novos segmentos  
-3. **Analise o histórico** de licitações similares para identificar padrões de sucesso
-4. **Considere parcerias** com empresas especialistas no segmento desta licitação`,
-        operational: `
-### Para Melhorar sua Capacidade:
-1. **Invista em infraestrutura** e recursos necessários para contratos similares
-2. **Desenvolva parcerias estratégicas** para complementar suas capacidades
-3. **Considere terceirização** de atividades fora do seu core business
-4. **Avalie o timing** - talvez esta licitação seja prematura para sua empresa atual`,
-        legal: `
-### Para Regularizar sua Situação:
-1. **Atualize documentos vencidos** ou próximos do vencimento
-2. **Contrate consultoria jurídica** especializada em licitações
-3. **Implemente rotina de renovação** automática de certidões
-4. **Revise contratos sociais** e documentos societários se necessário`,
-        financial: `
-### Para Melhorar sua Posição Financeira:
-1. **Renegocie condições de pagamento** com fornecedores
-2. **Busque linhas de crédito** específicas para contratos públicos
-3. **Otimize custos operacionais** para melhorar margem de contribuição
-4. **Considere licitações menores** que se adequem melhor ao seu porte`
-    };
-    return recommendations[stage] || "Consulte nossa equipe para recomendações personalizadas.";
 }

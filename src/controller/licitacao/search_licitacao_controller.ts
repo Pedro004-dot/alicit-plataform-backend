@@ -4,9 +4,8 @@ import searchLicitacaoService from "../../services/licitacao/searchLicitacaoServ
 const searchLicitacao = async (req: Request, res: Response) => {
   
   try {
-    const { palavraChave, tipoLicitacao, dataInicio, dataFim,valorMinimo, valorMaximo, fonte } = req.body;
-
-    const search = await searchLicitacaoService.searchLicitacao({palavraChave, tipoLicitacao, dataInicio, dataFim,valorMinimo, valorMaximo, fonte});
+  
+    const search = await searchLicitacaoService.searchLicitacao({dataFim: req.body.dataFim});
     
     res.status(201).json(search);
    return search;

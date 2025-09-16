@@ -12,11 +12,6 @@ interface RecomendacaoData {
 class RecomendacaoService {
   async salvarRecomendacoes(empresaCnpj: string, matchResults: MatchResult[]) {
     try {
-      console.log(`📊 Salvando ${matchResults.length} recomendações para empresa ${empresaCnpj}`);
-      
-      // Usar apenas o recomendacaoRepository que já salva na licitacao_empresa
-      // com origem_recomendacao=true e status="nao_definido"
-      
       const recomendacoes: RecomendacaoData[] = matchResults.map(match => ({
         numeroControlePNCP: match.licitacao.numeroControlePNCP,
         empresaCnpj,

@@ -7,9 +7,6 @@ const recomendacaoRepository_1 = __importDefault(require("../../repositories/rec
 class RecomendacaoService {
     async salvarRecomendacoes(empresaCnpj, matchResults) {
         try {
-            console.log(`📊 Salvando ${matchResults.length} recomendações para empresa ${empresaCnpj}`);
-            // Usar apenas o recomendacaoRepository que já salva na licitacao_empresa
-            // com origem_recomendacao=true e status="nao_definido"
             const recomendacoes = matchResults.map(match => ({
                 numeroControlePNCP: match.licitacao.numeroControlePNCP,
                 empresaCnpj,

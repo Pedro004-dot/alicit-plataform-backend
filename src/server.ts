@@ -14,6 +14,7 @@ import { PineconeRepository } from './repositories/pineconeRepository';
 import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
 
+
 const app = express();
 const PORT = parseInt(process.env.PORT || '3002', 10);
 

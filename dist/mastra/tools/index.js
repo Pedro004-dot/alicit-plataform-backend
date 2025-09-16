@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mastraTools = exports.extractDadosFinanceirosLicitacao = exports.extractObjetoLicitacao = exports.pineconeLicitacao = exports.supabaseEmpresa = exports.compareDocuments = exports.extractFinancialData = exports.extractLegalData = exports.updateWorkingMemory = exports.getCurrentDate = exports.extractDatesFromText = exports.summarizeText = exports.queryEditalDatabase = void 0;
+exports.mastraTools = exports.financialVectorTool = exports.legalVectorTool = exports.operationalVectorTool = exports.strategicVectorTool = exports.extractDadosFinanceirosLicitacao = exports.extractObjetoLicitacao = exports.pineconeLicitacao = exports.supabaseEmpresa = exports.compareDocuments = exports.extractFinancialData = exports.extractLegalData = exports.updateWorkingMemory = exports.getCurrentDate = exports.extractDatesFromText = exports.summarizeText = exports.queryEditalDatabase = void 0;
 // Tools essenciais
 var queryEditalTool_1 = require("./queryEditalTool");
 Object.defineProperty(exports, "queryEditalDatabase", { enumerable: true, get: function () { return queryEditalTool_1.queryEditalDatabase; } });
@@ -26,6 +26,12 @@ var pineconeLicitacaoTool_1 = require("./pineconeLicitacaoTool");
 Object.defineProperty(exports, "pineconeLicitacao", { enumerable: true, get: function () { return pineconeLicitacaoTool_1.pineconeLicitacao; } });
 Object.defineProperty(exports, "extractObjetoLicitacao", { enumerable: true, get: function () { return pineconeLicitacaoTool_1.extractObjetoLicitacao; } });
 Object.defineProperty(exports, "extractDadosFinanceirosLicitacao", { enumerable: true, get: function () { return pineconeLicitacaoTool_1.extractDadosFinanceirosLicitacao; } });
+// Vector Query Tools específicas por agente (Mastra RAG)
+var vectorQueryTools_1 = require("./vectorQueryTools");
+Object.defineProperty(exports, "strategicVectorTool", { enumerable: true, get: function () { return vectorQueryTools_1.strategicVectorTool; } });
+Object.defineProperty(exports, "operationalVectorTool", { enumerable: true, get: function () { return vectorQueryTools_1.operationalVectorTool; } });
+Object.defineProperty(exports, "legalVectorTool", { enumerable: true, get: function () { return vectorQueryTools_1.legalVectorTool; } });
+Object.defineProperty(exports, "financialVectorTool", { enumerable: true, get: function () { return vectorQueryTools_1.financialVectorTool; } });
 // Re-exportar todas as tools em um objeto para facilitar uso
 const queryEditalTool_2 = require("./queryEditalTool");
 const summarizeTextTool_2 = require("./summarizeTextTool");
@@ -37,6 +43,7 @@ const extractFinancialDataTool_2 = require("./extractFinancialDataTool");
 const compareDocumentsTool_2 = require("./compareDocumentsTool");
 const supabaseEmpresaTool_2 = require("./supabaseEmpresaTool");
 const pineconeLicitacaoTool_2 = require("./pineconeLicitacaoTool");
+const vectorQueryTools_2 = require("./vectorQueryTools");
 exports.mastraTools = {
     // Tools Essenciais
     queryEditalDatabase: queryEditalTool_2.queryEditalDatabase,
@@ -53,4 +60,9 @@ exports.mastraTools = {
     pineconeLicitacao: pineconeLicitacaoTool_2.pineconeLicitacao,
     extractObjetoLicitacao: pineconeLicitacaoTool_2.extractObjetoLicitacao,
     extractDadosFinanceirosLicitacao: pineconeLicitacaoTool_2.extractDadosFinanceirosLicitacao,
+    // Vector Query Tools (Mastra RAG)
+    strategicVectorTool: vectorQueryTools_2.strategicVectorTool,
+    operationalVectorTool: vectorQueryTools_2.operationalVectorTool,
+    legalVectorTool: vectorQueryTools_2.legalVectorTool,
+    financialVectorTool: vectorQueryTools_2.financialVectorTool,
 };

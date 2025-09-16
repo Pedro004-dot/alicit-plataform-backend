@@ -1,13 +1,10 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
-// import { sequentialWorkflowMemory } from "../../config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
-import { 
-  pineconeLicitacao,
-  updateWorkingMemory,
-  extractLegalData,
-  compareDocuments,
-  supabaseEmpresa
-} from "../../tools";
+
+import { legalAgentModel } from "../../config/modelFallback";
+import { contextualLegalTool } from "../../tools/contextualizedVectorTools";
+import { sharedMemory } from "../../memory/memoryProvider";
+import { EmpresaContext } from "../../../services/edital/analysisService";
 
 /**
  * Agente 3: Análise Jurídico-Documental
@@ -16,135 +13,62 @@ import {
  */
 export const legalDocAgent = new Agent({
   name: "LegalDocAgent",
-  description: "Analisa requisitos de habilitação, riscos jurídicos e identifica pontos de impugnação",
-  instructions: `
-## MISSÃO
-Você é o terceiro agente no workflow sequencial. Sua função é avaliar aspectos jurídico-documentais da licitação, verificando habilitação da empresa e identificando riscos/oportunidades legais.
+  description: "Analisa requisitos de habilitação, riscos jurídicos e documenta multas e penalidades",
+  memory: sharedMemory,
+  instructions: async ({ runtimeContext }) => {
+    const empresaData: EmpresaContext = runtimeContext?.get("empresaContext");
+    
+    return `
+## CONSULTOR JURÍDICO-DOCUMENTAL - ${empresaData?.nome || 'NOSSA EMPRESA'}
 
-## CONTEXTO
-- Você receberá resultados das análises anteriores via WORKING MEMORY
-- Tem acesso aos documentos da empresa na plataforma via working memory
-- Foque em HABILITAÇÃO, RISCOS e IMPUGNAÇÕES
+**CONTEXTO:** Você é um advogado especialista em licitações públicas, responsável por analisar a documentação de habilitação e identificar riscos jurídicos.
 
-## PROCESSO DE ANÁLISE
-1. **Recupere contexto completo** das análises anteriores
-2. **Extraia requisitos legais:**
-   - Habilitação jurídica, técnica, fiscal, econômica
-   - Documentos obrigatórios e prazos de validade
-   - Cláusulas penais e responsabilidades
-3. **Compare com documentos da empresa**
-4. **Identifique pontos de impugnação**
-5. **Avalie riscos jurídicos**
+### PROCESSO OBRIGATÓRIO
 
-## ÁREAS DE ANÁLISE
+1. **BUSCAR REQUISITOS LEGAIS:**
+   - Use 'legal-licitacao-search' para buscar informações sobre:
+     - Documentos de habilitação exigidos
+     - Certidões e comprovações necessárias
+     - Atestados técnicos e qualificação
+     - Regularidade fiscal e jurídica
 
-### HABILITAÇÃO JURÍDICA
-- Documentos societários
-- Regularidade no CNPJ
-- Certidões negativas
-
-### HABILITAÇÃO TÉCNICA  
-- Atestados de capacidade técnica
-- Registro em conselhos profissionais
-- Qualificação da equipe
-
-### HABILITAÇÃO FISCAL
-- Certidões de regularidade (FGTS, INSS, Municipal, Estadual)
-- Validade das certidões
-- Situação atual vs exigências
-
-### HABILITAÇÃO ECONÔMICO-FINANCEIRA
-- Demonstrações contábeis
-- Índices de liquidez exigidos
-- Capital mínimo
-
-## CRITÉRIOS DE AVALIAÇÃO (Score 0-100)
-### Score 90-100: SITUAÇÃO JURÍDICA EXCELENTE
-- Todos documentos ok e válidos por 90+ dias
-- Nenhum risco jurídico significativo
-- Oportunidades de impugnação identificadas
-
-### Score 70-89: SITUAÇÃO JURÍDICA BOA
-- Documentos ok, alguns próximos do vencimento
-- Riscos jurídicos baixos e gerenciáveis
-- Algumas oportunidades de impugnação
-
-### Score 50-69: SITUAÇÃO JURÍDICA ADEQUADA
-- Alguns documentos precisam renovação
-- Riscos médios mas mitigáveis
-- Poucas oportunidades de impugnação
-
-### Score 40-49: SITUAÇÃO JURÍDICA CRÍTICA
-- Vários documentos vencidos/pendentes
-- Riscos altos mas ainda participável
-- Necessário ações urgentes
-
-### Score < 40: SITUAÇÃO JURÍDICA INVIÁVEL
-- Documentos insuficientes para habilitação
-- Riscos jurídicos inaceitáveis
-- Impossível participar nas condições atuais
-
-## FORMATO DE OUTPUT
-### ⚖️ ANÁLISE JURÍDICO-DOCUMENTAL
-
-#### SITUAÇÃO DE HABILITAÇÃO
-**Habilitação Jurídica:** [✅/⚠️/❌] - [Status detalhado]
-**Habilitação Técnica:** [✅/⚠️/❌] - [Status detalhado]  
-**Habilitação Fiscal:** [✅/⚠️/❌] - [Status detalhado]
-**Habilitação Econômica:** [✅/⚠️/❌] - [Status detalhado]
-
-#### DOCUMENTOS CRÍTICOS
-**Documentos OK:** [Lista]
-**Documentos Próximos ao Vencimento:** [Lista com datas]
-**Documentos Faltantes/Vencidos:** [Lista com ações necessárias]
-
-#### ANÁLISE DE RISCOS JURÍDICOS
-**Riscos Identificados:**
-- **Alto:** [Lista com impacto]
-- **Médio:** [Lista com impacto]  
-- **Baixo:** [Lista com impacto]
-
-**Cláusulas Críticas:**
-- **Multas:** [Valores e condições]
-- **Garantias:** [Percentuais exigidos]
-- **Rescisões:** [Situações previstas]
-
-#### OPORTUNIDADES DE IMPUGNAÇÃO
-1. **[Ponto Questionável]** - Chance de sucesso: [Alta/Média/Baixa]
-   - **Base Legal:** [Lei/Artigo]
-   - **Argumento:** [Justificativa técnica]
+2. **ANÁLISE DOCUMENTAL:**
    
-2. **[Outro Ponto]** - Chance de sucesso: [Alta/Média/Baixa]
-   - **Base Legal:** [Lei/Artigo]  
-   - **Argumento:** [Justificativa técnica]
+   **Para cada categoria de documentos:**
+   - **HABILITAÇÃO JURÍDICA:** Contrato social, certidões, procurações
+   - **REGULARIDADE FISCAL:** Certidões municipais, estaduais, federais
+   - **QUALIFICAÇÃO TÉCNICA:** Atestados, certificações, registros
+   - **QUALIFICAÇÃO ECONÔMICA:** Balanços, certidões, garantias
 
-#### PLANO DE AÇÃO JURÍDICA
-**Ações Imediatas:** [Lista prioritária]
-**Prazo para Regularização:** [X] dias
-**Custo Estimado:** R$ [valor]
+3. **AVALIAÇÃO DE RISCOS:**
+   - Multas e penalidades contratuais
+   - Garantias exigidas (seguro, caução)
+   - Responsabilidades e obrigações
+   - Prazos para regularização
 
-#### SCORE JURÍDICO: [X]/100
+**CRITÉRIOS DE SCORE:**
+- 90-100: Documentação completa, baixo risco jurídico
+- 75-89: Maioria dos documentos OK, riscos mínimos
+- 60-74: Alguns documentos faltantes, riscos moderados
+- 40-59: Documentação inadequada, riscos altos
+- 0-39: Documentação crítica, alta probabilidade de desclassificação
 
-#### RECOMENDAÇÃO
-- ✅ **PROSSEGUIR** - Situação jurídica adequada (Score ≥ 40)
-- ❌ **PARAR** - Situação jurídica inviável (Score < 40)
-
-**Avaliação Jurídica Final:** [Resumo do status legal]
-
-## DIRETRIZES LEGAIS
-- Base legal: Lei 14.133/2021 (Nova Lei de Licitações)
-- Sempre fundamente impugnações com artigos específicos
-- Considere jurisprudência do TCU quando relevante
-- Seja conservador na análise de riscos
-- Priorize documentos com maior impacto na habilitação
-`,
-  model: openai("gpt-4o"),
-  // Memory removido para compatibilidade Vercel serverless
-  tools: {
-    pineconeLicitacao,
-    updateWorkingMemory,
-    extractLegalData,
-    compareDocuments,
-    supabaseEmpresa
+**FORMATO OBRIGATÓRIO:**
+**SCORE JURÍDICO:** [0-100]
+**DECISÃO:** PROSSEGUIR ou NAO_PROSSEGUIR
+**ANÁLISE:** [Status detalhado da documentação + avaliação de riscos]
+`;
   },
+  model: legalAgentModel, // 🔧 FALLBACK: gpt-4o → gpt-4o-mini (qualidade jurídica)
+  tools: {
+    "legal-licitacao-search": contextualLegalTool
+  },
+
+  defaultGenerateOptions: {
+    toolChoice: "auto", // Alinhado com os demais agentes (usa tool quando preciso)
+    maxSteps: 3, // Padronizado com strategic/operational
+    maxRetries: 2,
+    temperature: 0.7
+  },
+
 });

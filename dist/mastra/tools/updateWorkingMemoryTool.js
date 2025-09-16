@@ -1,8 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateWorkingMemory = void 0;
+exports.updateWorkingMemory = exports.capturedScores = void 0;
+exports.resetCapturedScores = resetCapturedScores;
 const tools_1 = require("@mastra/core/tools");
 const zod_1 = require("zod");
+// Global score store para capturar scores dos agentes
+exports.capturedScores = {
+    strategic: 0,
+    operational: 0,
+    legal: 0,
+    financial: 0
+};
+function resetCapturedScores() {
+    exports.capturedScores = { strategic: 0, operational: 0, legal: 0, financial: 0 };
+}
 /**
  * Tool para atualizar working memory com resultados da análise
  * Permite que agentes atualizem o estado global progressivamente
@@ -29,8 +40,25 @@ exports.updateWorkingMemory = (0, tools_1.createTool)({
             console.log('  content (primeiros 150 chars):', content?.substring(0, 150));
             console.log('  score:', score);
             console.log('  status:', status);
-            // TODO: Implementar integração com working memory do Mastra
-            // Por enquanto, apenas simula a atualização
+            // Capturar score baseado na seção
+            if (score !== undefined && score > 0) {
+                if (section.toLowerCase().includes('aderência') || section.toLowerCase().includes('estratégic')) {
+                    exports.capturedScores.strategic = score;
+                    console.log(`🎯 [SCORE CAPTURE] Strategic score capturado: ${score}`);
+                }
+                else if (section.toLowerCase().includes('operacional')) {
+                    exports.capturedScores.operational = score;
+                    console.log(`🎯 [SCORE CAPTURE] Operational score capturado: ${score}`);
+                }
+                else if (section.toLowerCase().includes('jurídic') || section.toLowerCase().includes('legal')) {
+                    exports.capturedScores.legal = score;
+                    console.log(`🎯 [SCORE CAPTURE] Legal score capturado: ${score}`);
+                }
+                else if (section.toLowerCase().includes('financeiro') || section.toLowerCase().includes('financial')) {
+                    exports.capturedScores.financial = score;
+                    console.log(`🎯 [SCORE CAPTURE] Financial score capturado: ${score}`);
+                }
+            }
             console.log(`📝 Working Memory atualizada:`);
             console.log(`   Seção: ${section}`);
             console.log(`   Conteúdo: ${content}`);

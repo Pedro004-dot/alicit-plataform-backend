@@ -19,9 +19,16 @@ const strategicFitAgent_2 = require("./strategicFitAgent");
 const operationalAgent_2 = require("./operationalAgent");
 const legalDocAgent_2 = require("./legalDocAgent");
 const financialAgent_2 = require("./financialAgent");
+// ✅ AGENTS SIMPLIFICADOS PARA DEBUG
+const simpleStrategicAgent_1 = require("../simpleStrategicAgent");
+const ultraSimpleAgent_1 = require("../ultraSimpleAgent");
 exports.sequentialAgents = {
     strategicFitAgent: strategicFitAgent_2.strategicFitAgent,
-    operationalAgent: operationalAgent_2.operationalAgent,
+    simpleStrategicAgent: simpleStrategicAgent_1.simpleStrategicAgent, // ✅ ADICIONADO para debug
+    ultraSimpleAgent: // ✅ ADICIONADO para debug
+    ultraSimpleAgent_1.ultraSimpleAgent, // ✅ ULTRA SIMPLES para debug
+    operationalAgent: // ✅ ULTRA SIMPLES para debug
+    operationalAgent_2.operationalAgent,
     legalDocAgent: legalDocAgent_2.legalDocAgent,
     financialAgent: financialAgent_2.financialAgent,
 };

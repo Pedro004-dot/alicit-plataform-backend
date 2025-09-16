@@ -119,7 +119,8 @@ class PineconeRepository {
                     id: chunk.id,
                     values: chunk.embedding,
                     metadata: {
-                        text: chunk.text.substring(0, 40000), // Pinecone tem limite de metadata
+                        document: chunk.text.substring(0, 40000), // ✅ CAMPO CORRETO para Mastra
+                        text: chunk.text.substring(0, 40000), // ✅ MANTÉM para compatibilidade
                         licitacaoId: chunk.metadata.licitacaoId,
                         documentIndex: chunk.metadata.documentIndex,
                         documentType: chunk.metadata.documentType,

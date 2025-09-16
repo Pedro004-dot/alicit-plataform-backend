@@ -15,7 +15,7 @@ const calculateMatching = async (empresaPerfil) => {
         const index = pinecone.index('alicit-editais');
         const searchResults = await index.query({
             vector: empresaEmbedding,
-            topK: 500, // Mais candidatos para compensar remoção dos filtros
+            topK: 500,
             includeValues: false,
             includeMetadata: true,
             filter: filters
@@ -151,7 +151,6 @@ const generateEmpresaEmbedding = async (empresaPerfil) => {
  * Todos os outros filtros (região, valor, modalidade) serão aplicados pelo filterEngine.ts
  */
 const buildPineconeFilters = () => {
-    // ÚNICO filtro: apenas licitações (não chunks de editais)
     const filters = {
         numeroControlePNCP: { $exists: true }
     };

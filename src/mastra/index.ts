@@ -2,7 +2,8 @@ import { Mastra } from "@mastra/core/mastra";
 
 // Importar arquitetura sequencial limpa
 import { sequentialAgents } from "./agents/sequential";
-import { sequentialAnalysisWorkflow } from "./workflows/sequentialAnalysisWorkflowSimplified";
+import { workflow } from "./workflows/workflow";
+import { pineconeVectorStore, initializePineconeIndex } from "./config/vectorStore";
 
 /**
  * Instância principal do Mastra com arquitetura sequencial
@@ -14,13 +15,22 @@ export const mastra = new Mastra({
     ...sequentialAgents,
   },
   workflows: {
-    sequentialAnalysisWorkflow,
+    workflow,
   },
-  // SEM STORAGE para compatibilidade com Vercel serverless
+  vectors: {
+    pinecone: pineconeVectorStore as any,
+  },
 });
+
+// Inicializar Pinecone Index na primeira execução
+initializePineconeIndex().then(success => {
+  if (success) {
+    console.log('✅ Vector search habilitado');
+  } else {
+    console.log('⚠️ Vector search desabilitado');
+  }
+}).catch(console.error);
 
 // Re-exportar componentes principais para facilitar uso
 export { sequentialAgents } from "./agents/sequential";
-export { sequentialAnalysisWorkflow } from "./workflows/sequentialAnalysisWorkflowSimplified";
-// export { sequentialWorkflowMemory } from "./config/memoryConfig"; // Memory removido para compatibilidade Vercel serverless
 export { mastraTools } from "./tools";

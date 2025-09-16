@@ -1,6 +1,18 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 
+// Global score store para capturar scores dos agentes
+export let capturedScores = {
+  strategic: 0,
+  operational: 0,
+  legal: 0,
+  financial: 0
+};
+
+export function resetCapturedScores() {
+  capturedScores = { strategic: 0, operational: 0, legal: 0, financial: 0 };
+}
+
 /**
  * Tool para atualizar working memory com resultados da análise
  * Permite que agentes atualizem o estado global progressivamente
@@ -29,8 +41,22 @@ export const updateWorkingMemory = createTool({
       console.log('  score:', score);
       console.log('  status:', status);
       
-      // TODO: Implementar integração com working memory do Mastra
-      // Por enquanto, apenas simula a atualização
+      // Capturar score baseado na seção
+      if (score !== undefined && score > 0) {
+        if (section.toLowerCase().includes('aderência') || section.toLowerCase().includes('estratégic')) {
+          capturedScores.strategic = score;
+          console.log(`🎯 [SCORE CAPTURE] Strategic score capturado: ${score}`);
+        } else if (section.toLowerCase().includes('operacional')) {
+          capturedScores.operational = score;
+          console.log(`🎯 [SCORE CAPTURE] Operational score capturado: ${score}`);
+        } else if (section.toLowerCase().includes('jurídic') || section.toLowerCase().includes('legal')) {
+          capturedScores.legal = score;
+          console.log(`🎯 [SCORE CAPTURE] Legal score capturado: ${score}`);
+        } else if (section.toLowerCase().includes('financeiro') || section.toLowerCase().includes('financial')) {
+          capturedScores.financial = score;
+          console.log(`🎯 [SCORE CAPTURE] Financial score capturado: ${score}`);
+        }
+      }
       
       console.log(`📝 Working Memory atualizada:`);
       console.log(`   Seção: ${section}`);

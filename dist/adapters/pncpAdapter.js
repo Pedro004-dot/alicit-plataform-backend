@@ -38,11 +38,11 @@ const fetchPaginaUnica = async (baseUrl, dataFinal, pagina) => {
         };
     }
 };
-const searchLicitacoesPNCP = async (params, maxPaginas = 100) => {
+const buscarLicitacoesPNCP = async (params, maxPaginas = 100) => {
     const baseUrl = 'https://pncp.gov.br/api/consulta/v1/contratacoes/proposta';
     const dataFinal = params.dataFinal || new Date().toISOString().split('T')[0].replace(/-/g, '');
     const todasLicitacoes = [];
-    const batchSize = 10; // 4 requisições paralelas
+    const batchSize = 10;
     let paginaAtual = params.pagina || 1;
     let totalPaginas = maxPaginas;
     let paginasProcessadas = 0;
@@ -50,7 +50,6 @@ const searchLicitacoesPNCP = async (params, maxPaginas = 100) => {
     console.log(`🚀 Iniciando busca paralela: data=${dataFinal}, maxPaginas=${maxPaginas}, batchSize=${batchSize}`);
     try {
         while (todasLicitacoes.length < 30000) {
-            // Cria batch de URLs para requisições paralelas
             const paginasParaBuscar = [];
             for (let i = 0; i < batchSize && paginaAtual + i <= totalPaginas; i++) {
                 if (paginasProcessadas + i < maxPaginas) {
@@ -137,4 +136,4 @@ const downloadLicitacaoPNCP = async (params) => {
     console.log(`Total documents: ${i}`);
     return documentsUrl;
 };
-exports.default = { searchLicitacoesPNCP, downloadLicitacaoPNCP };
+exports.default = { buscarLicitacoesPNCP, downloadLicitacaoPNCP };

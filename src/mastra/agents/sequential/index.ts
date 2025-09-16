@@ -14,9 +14,14 @@ import { strategicFitAgent } from "./strategicFitAgent";
 import { operationalAgent } from "./operationalAgent";
 import { legalDocAgent } from "./legalDocAgent";
 import { financialAgent } from "./financialAgent";
+// ✅ AGENTS SIMPLIFICADOS PARA DEBUG
+import { simpleStrategicAgent } from "../simpleStrategicAgent";
+import { ultraSimpleAgent } from "../ultraSimpleAgent";
 
 export const sequentialAgents = {
   strategicFitAgent,
+  simpleStrategicAgent, // ✅ ADICIONADO para debug
+  ultraSimpleAgent, // ✅ ULTRA SIMPLES para debug
   operationalAgent,
   legalDocAgent,
   financialAgent,

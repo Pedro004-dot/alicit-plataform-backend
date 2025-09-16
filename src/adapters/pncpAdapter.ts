@@ -1,9 +1,5 @@
 interface PNCPSearchParams {
-  palavraChave?: string;
-  dataInicio?: string;
   dataFim?: string;
-  valorMinimo?: string;
-  valorMaximo?: string;
   dataFinal?: string;
   pagina?: number;
 }
@@ -171,12 +167,12 @@ const fetchPaginaUnica = async (baseUrl: string, dataFinal: string, pagina: numb
   }
 };
 
-const searchLicitacoesPNCP = async (params: PNCPSearchParams, maxPaginas: number = 100): Promise<PNCPLicitacao[]> => {
+const buscarLicitacoesPNCP = async (params: PNCPSearchParams, maxPaginas: number = 100): Promise<PNCPLicitacao[]> => {
   const baseUrl = 'https://pncp.gov.br/api/consulta/v1/contratacoes/proposta';
   const dataFinal = params.dataFinal || new Date().toISOString().split('T')[0].replace(/-/g, '');
   const todasLicitacoes: PNCPLicitacao[] = [];
   
-  const batchSize = 10; // 4 requisições paralelas
+  const batchSize = 10;
   let paginaAtual = params.pagina || 1;
   let totalPaginas = maxPaginas;
   let paginasProcessadas = 0;
@@ -186,7 +182,6 @@ const searchLicitacoesPNCP = async (params: PNCPSearchParams, maxPaginas: number
   
   try {
     while (todasLicitacoes.length < 30000) {
-      // Cria batch de URLs para requisições paralelas
       const paginasParaBuscar = [];
       for (let i = 0; i < batchSize && paginaAtual + i <= totalPaginas; i++) {
         if (paginasProcessadas + i < maxPaginas) {
@@ -296,4 +291,4 @@ const downloadLicitacaoPNCP = async (params: licitacaoData): Promise<string[]> =
   return documentsUrl;
 };
 
-export default { searchLicitacoesPNCP, downloadLicitacaoPNCP };
+export default { buscarLicitacoesPNCP, downloadLicitacaoPNCP };

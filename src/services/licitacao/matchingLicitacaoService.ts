@@ -19,7 +19,7 @@ const calculateMatching = async (empresaPerfil: EmpresaPerfil): Promise<MatchRes
     
     const searchResults = await index.query({
       vector: empresaEmbedding,
-      topK: 500, // Mais candidatos para compensar remoção dos filtros
+      topK: 500,
       includeValues: false,
       includeMetadata: true,
       filter: filters
@@ -60,10 +60,13 @@ const calculateMatching = async (empresaPerfil: EmpresaPerfil): Promise<MatchRes
       })
       .filter(candidate => candidate !== null);
 
+
+
     // 5. CONVERTER para licitações simples para o filterEngine
     const licitacoesParaFiltro = candidates.map(candidate => candidate.licitacao);
     console.log(`📊 ${licitacoesParaFiltro.length} licitações semânticas encontradas, aplicando filtros precisos...`);
 
+    
     // 6. APLICAR FILTROS PRECISOS usando filterEngine.ts
     const resultadoFiltros = await aplicarFiltrosAtivos(licitacoesParaFiltro, empresaPerfil);
     
@@ -179,7 +182,7 @@ const generateEmpresaEmbedding = async (empresaPerfil: EmpresaPerfil): Promise<n
  * Todos os outros filtros (região, valor, modalidade) serão aplicados pelo filterEngine.ts
  */
 const buildPineconeFilters = (): any => {
-  // ÚNICO filtro: apenas licitações (não chunks de editais)
+  
   const filters = {
     numeroControlePNCP: { $exists: true }
   };
