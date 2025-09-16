@@ -18,9 +18,28 @@ const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || '3002', 10);
+// Configuração CORS para suportar múltiplos ambientes
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://alicitplataform.vercel.app',
+    process.env.CORS_ORIGIN
+].filter(Boolean);
 app.use((0, cors_1.default)({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-    credentials: true
+    origin: (origin, callback) => {
+        // Permite requisições sem origin (apps mobile, Postman, etc.)
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        }
+        else {
+            console.log(`CORS bloqueou origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express_1.default.json());
 // Health check para Vercel
