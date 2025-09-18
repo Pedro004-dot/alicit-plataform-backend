@@ -4,7 +4,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
-    "build": "tsc",
+    "build": "tsc && cp src/municipios.csv dist/municipios.csv",
     "start": "node dist/server.js",
     "postbuild": "cp -r src/public dist/ 2>/dev/null || true",
     "vercel-build": "npm run build",
