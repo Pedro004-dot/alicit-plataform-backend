@@ -36,32 +36,16 @@ class EditalAnalysisService {
                     empresaContext: empresaContext || undefined
                 };
                 // TIMEOUT global para todo o workflow (120 segundos)
-                const WORKFLOW_TIMEOUT = 120000;
-                let workflowStartTime = Date.now();
+                const WORKFLOW_TIMEOUT = 320000;
                 workflowResult = await Promise.race([
                     (async () => {
                         const result = await run.start({ inputData });
-                        console.log(`📊 [ANALYSIS SERVICE] Resultado do workflow:`, {
-                            decision: result?.decision,
-                            consolidatedScore: result?.consolidatedScore,
-                            stoppedAt: result?.stoppedAt,
-                            hasExecutiveReport: !!result?.executiveReport,
-                            executionMetadata: result?.executionMetadata,
-                            // ✅ DEBUG: Mostrar resultado completo
-                            fullResult: result
-                        });
                         return result;
                     })(),
                     new Promise((_, reject) => setTimeout(() => {
                         reject(new Error(`Workflow timeout após ${WORKFLOW_TIMEOUT / 1000} segundos`));
                     }, WORKFLOW_TIMEOUT))
                 ]);
-                console.log('✅ Workflow do Mastra executado com sucesso!');
-                console.log('✅ Resultado do workflow:', {
-                    decision: workflowResult?.decision,
-                    consolidatedScore: workflowResult?.consolidatedScore,
-                    stoppedAt: workflowResult?.stoppedAt
-                });
             }
             catch (workflowErr) {
                 console.error('❌ ERRO NO WORKFLOW:', workflowErr);
@@ -70,49 +54,34 @@ class EditalAnalysisService {
             }
             let finalReport;
             let validationScore = 0;
+            // ✅ CORREÇÃO: Declarar actualResult no escopo mais amplo
+            let actualResult = null;
             // Verificar se o workflow foi bem sucedido
-            if (workflowResult && !workflowError) {
-                // ✅ CORREÇÃO: Mastra retorna resultado aninhado por step ID
-                let actualResult = null;
-                // Tentar acessar resultado baseado no step final executado
+            if (workflowResult && !workflowError && workflowResult.status === 'success') {
+                // O resultado está sempre em workflowResult.result
                 if (workflowResult.result) {
-                    // Prioridade: legal-complete > operational-complete > operational-stop > strategic-stop
-                    if (workflowResult.result['legal-complete']) {
-                        actualResult = workflowResult.result['legal-complete'];
-                        console.log('✅ [ANALYSIS SERVICE] Resultado encontrado em legal-complete');
-                    }
-                    else if (workflowResult.result['operational-complete']) {
-                        actualResult = workflowResult.result['operational-complete'];
-                        console.log('✅ [ANALYSIS SERVICE] Resultado encontrado em operational-complete');
-                    }
-                    else if (workflowResult.result['operational-stop']) {
-                        actualResult = workflowResult.result['operational-stop'];
-                        console.log('✅ [ANALYSIS SERVICE] Resultado encontrado em operational-stop');
-                    }
-                    else if (workflowResult.result['strategic-stop']) {
-                        actualResult = workflowResult.result['strategic-stop'];
-                        console.log('✅ [ANALYSIS SERVICE] Resultado encontrado em strategic-stop');
-                    }
-                    // Fallback: tentar acessar diretamente
-                    else {
-                        actualResult = workflowResult.result;
-                        console.log('⚠️ [ANALYSIS SERVICE] Usando resultado direto como fallback');
-                    }
+                    actualResult = workflowResult.result;
+                    console.log('✅ [ANALYSIS SERVICE] Resultado extraído do workflow');
                 }
                 else {
-                    actualResult = workflowResult;
-                    console.log('⚠️ [ANALYSIS SERVICE] Usando workflowResult direto como fallback');
+                    actualResult = null;
+                    console.log('⚠️ [ANALYSIS SERVICE] workflowResult.result é null');
                 }
-                console.log('✅ [RESULTADO] Resultado workflow 3-AGENTES CORRETO:', {
-                    strategicDecision: actualResult?.strategicDecision,
-                    strategicScore: actualResult?.strategicScore,
-                    operationalDecision: actualResult?.operationalDecision,
-                    operationalScore: actualResult?.operationalScore,
-                    legalDecision: actualResult?.legalDecision,
-                    legalScore: actualResult?.legalScore,
+                // Extrair dados individuais dos agentes
+                const agentsData = actualResult?.agents || {};
+                const strategicAgent = agentsData.strategic;
+                const operationalAgent = agentsData.operational;
+                const legalAgent = agentsData.legal;
+                console.log('✅ [RESULTADO] Resultado workflow estruturado:', {
                     finalDecision: actualResult?.finalDecision,
                     consolidatedScore: actualResult?.consolidatedScore,
-                    executiveAnalysisLength: actualResult?.analysis?.executive?.length || 0
+                    strategicDecision: strategicAgent?.decision,
+                    strategicScore: strategicAgent?.score,
+                    operationalDecision: operationalAgent?.decision,
+                    operationalScore: operationalAgent?.score,
+                    legalDecision: legalAgent?.decision,
+                    legalScore: legalAgent?.score,
+                    executiveSummaryLength: actualResult?.executiveSummary?.length || 0
                 });
                 // Relatório com análises estratégica e operacional
                 if (actualResult) {
@@ -128,21 +97,21 @@ SCORE CONSOLIDADO: ${actualResult.consolidatedScore || 0}/100
 
 === ANÁLISES DETALHADAS ===
 
-📊 ANÁLISE ESTRATÉGICA (Score: ${actualResult.strategicScore || 0}/100 - ${actualResult.strategicDecision || 'N/A'})
-${actualResult.analysis?.strategic || 'N/A'}
+📊 ANÁLISE ESTRATÉGICA (Score: ${strategicAgent?.score || 0}/100 - ${strategicAgent?.decision || 'N/A'})
+${strategicAgent?.analysis || 'N/A'}
 
-${actualResult.operationalDecision ? `
-⚙️ ANÁLISE OPERACIONAL (Score: ${actualResult.operationalScore || 0}/100 - ${actualResult.operationalDecision})
-${actualResult.analysis?.operational || 'N/A'}
+${operationalAgent ? `
+⚙️ ANÁLISE OPERACIONAL (Score: ${operationalAgent.score || 0}/100 - ${operationalAgent.decision})
+${operationalAgent.analysis || 'N/A'}
 ` : '🛑 ANÁLISE OPERACIONAL: Não executada (strategic foi NAO_PROSSEGUIR)'}
 
-${actualResult.legalDecision ? `
-⚖️ ANÁLISE JURÍDICO-DOCUMENTAL (Score: ${actualResult.legalScore || 0}/100 - ${actualResult.legalDecision})
-${actualResult.analysis?.legal || 'N/A'}
+${legalAgent ? `
+⚖️ ANÁLISE JURÍDICO-DOCUMENTAL (Score: ${legalAgent.score || 0}/100 - ${legalAgent.decision})
+${legalAgent.analysis || 'N/A'}
 ` : '🛑 ANÁLISE LEGAL: Não executada (análise anterior foi NAO_PROSSEGUIR)'}
 
 📋 SUMÁRIO EXECUTIVO
-${actualResult.analysis?.executive || 'N/A'}`;
+${actualResult.executiveSummary || 'N/A'}`;
                     validationScore = actualResult.consolidatedScore || 0;
                 }
                 else {
@@ -192,7 +161,12 @@ O workflow executou, mas não foi possível extrair o resultado corretamente. Es
                     console.error('⚠️ Erro ao salvar relatório no storage:', storageError);
                 }
             }
-            return {
+            // ✅ EXTRAÇÃO FINAL: Usar actualResult que pode ser null se houve erro
+            const agentsData = actualResult?.agents || {};
+            const strategicAgent = agentsData.strategic;
+            const operationalAgent = agentsData.operational;
+            const legalAgent = agentsData.legal;
+            const finalResult = {
                 status: "completed",
                 licitacaoId: request.licitacaoId,
                 processedAt: new Date().toISOString(),
@@ -201,7 +175,22 @@ O workflow executou, mas não foi possível extrair o resultado corretamente. Es
                 impugnacaoAnalysis: (0, hooks_1.extractImpugnacaoAnalysis)(finalReport),
                 finalReport,
                 validationScore,
+                // ✅ ADICIONANDO: Dados individuais dos agentes
+                finalDecision: actualResult?.finalDecision,
+                consolidatedScore: actualResult?.consolidatedScore,
+                strategicDecision: strategicAgent?.decision,
+                strategicScore: strategicAgent?.score,
+                operationalDecision: operationalAgent?.decision,
+                operationalScore: operationalAgent?.score,
+                legalDecision: legalAgent?.decision,
+                legalScore: legalAgent?.score,
+                executiveAnalysisLength: actualResult?.executiveSummary?.length || 0,
+                // ✅ NOVOS CAMPOS DO AGENTE AGREGADOR
+                executiveReport: actualResult?.executiveReport,
+                riskLevel: actualResult?.riskLevel,
+                keyAlerts: actualResult?.keyAlerts || []
             };
+            return finalResult;
         }
         catch (error) {
             console.error('❌ ERRO CRÍTICO em analyzeEdital:', error);
@@ -227,32 +216,83 @@ O workflow executou, mas não foi possível extrair o resultado corretamente. Es
             return null;
         }
         try {
-            const empresa = await empresaRepository_1.default.getEmpresaByCnpj(empresaCNPJ);
+            // ✅ USAR NOVA FUNÇÃO: Buscar contexto completo da empresa
+            console.log(`🔍 [ANALYSIS SERVICE] Buscando contexto completo para empresa: ${empresaCNPJ}`);
+            const empresa = await empresaRepository_1.default.getEmpresaContextoCompleto(empresaCNPJ);
             if (!empresa) {
                 console.log(`❌ Empresa não encontrada: ${empresaCNPJ}`);
                 return null;
             }
-            // Processar certificações/documentos
-            const certificacoes = empresa.empresa_documentos?.map((doc) => ({
-                nome: doc.nome_documento,
-                descricao: doc.descricao || '',
-                dataVencimento: doc.data_vencimento ? new Date(doc.data_vencimento).toLocaleDateString('pt-BR') : undefined,
-                status: doc.status_documento || 'pendente'
-            })) || [];
+            console.log(`✅ [ANALYSIS SERVICE] Empresa encontrada: ${empresa.nome} - Dados carregados:`, {
+                produtos: empresa.produtos?.length || 0,
+                servicos: empresa.servicos?.length || 0,
+                temDadosFinanceiros: !!(empresa.financeiro?.faturamentoMensal),
+                temCapacidades: !!(empresa.capacidades?.numeroFuncionarios),
+                situacaoJuridica: empresa.juridico?.situacaoReceitaFederal
+            });
             const context = {
+                // Dados Básicos
                 nome: empresa.nome || 'Não informado',
                 cnpj: empresa.cnpj || empresaCNPJ,
-                porte: empresa.porte || "Médio",
-                segmento: empresa.segmento || 'Não informado',
-                produtos: empresa.empresa_produtos?.map((p) => p.produto) || [],
-                servicos: empresa.empresa_servicos?.map((s) => s.servico) || [],
-                localizacao: empresa.cidade || 'Não informado',
-                capacidadeOperacional: empresa.capacidade_operacional || 'Não informado',
-                // Novos campos financeiros
-                faturamento: empresa.faturamento || undefined,
-                capitalSocial: empresa.capitalSocial || undefined,
-                // Certificações/documentos
-                certificacoes,
+                razaoSocial: empresa.razaoSocial || empresa.nome,
+                porte: (Array.isArray(empresa.porte) ? empresa.porte[0] : empresa.porte) || "Médio",
+                descricao: empresa.descricao || 'Não informado',
+                // Core Business - Dados estruturados
+                produtos: empresa.produtos || [],
+                servicos: empresa.servicos || [],
+                palavrasChave: empresa.palavrasChave || '',
+                produtoServico: empresa.produtoServico || '',
+                // Localização
+                localizacao: empresa.localizacao?.cidade || 'Não informado',
+                endereco: empresa.localizacao?.endereco || 'Não informado',
+                raioDistancia: empresa.localizacao?.raioDistancia || 0,
+                // ✅ DADOS FINANCEIROS COMPLETOS
+                financeiro: {
+                    faturamento: empresa.financeiro?.faturamento,
+                    faturamentoMensal: empresa.financeiro?.faturamentoMensal,
+                    capitalSocial: empresa.financeiro?.capitalSocial,
+                    capitalGiroDisponivel: empresa.financeiro?.capitalGiroDisponivel,
+                    margemLucroMedia: empresa.financeiro?.margemLucroMedia,
+                    capacidadeSeguroGarantia: empresa.financeiro?.capacidadeSeguroGarantia,
+                    experienciaLicitacoesAnos: empresa.financeiro?.experienciaLicitacoesAnos,
+                    numeroLicitacoesVencidas: empresa.financeiro?.numeroLicitacoesVencidas,
+                    numeroLicitacoesParticipadas: empresa.financeiro?.numeroLicitacoesParticipadas
+                },
+                // ✅ CAPACIDADES OPERACIONAIS/TÉCNICAS
+                capacidades: {
+                    capacidadeProducaoMensal: empresa.capacidades?.capacidadeProducaoMensal,
+                    numeroFuncionarios: empresa.capacidades?.numeroFuncionarios,
+                    certificacoes: empresa.capacidades?.certificacoes || [],
+                    alcanceGeografico: empresa.capacidades?.alcanceGeografico || [],
+                    setoresExperiencia: empresa.capacidades?.setoresExperiencia || [],
+                    tempoMercadoAnos: empresa.capacidades?.tempoMercadoAnos,
+                    prazoMinimoExecucao: empresa.capacidades?.prazoMinimoExecucao,
+                    prazoMaximoExecucao: empresa.capacidades?.prazoMaximoExecucao,
+                    capacidadeContratoSimultaneos: empresa.capacidades?.capacidadeContratoSimultaneos
+                },
+                // ✅ SITUAÇÃO JURÍDICA
+                juridico: {
+                    situacaoReceitaFederal: empresa.juridico?.situacaoReceitaFederal || 'ATIVA',
+                    certidoesStatus: empresa.juridico?.certidoesStatus || {},
+                    impedimentoLicitar: empresa.juridico?.impedimentoLicitar || false,
+                    atestadosCapacidadeTecnica: empresa.juridico?.atestadosCapacidadeTecnica || []
+                },
+                // ✅ PERFIL COMERCIAL
+                comercial: {
+                    modalidadesPreferenciais: empresa.comercial?.modalidadesPreferenciais || [],
+                    margemCompetitiva: empresa.comercial?.margemCompetitiva,
+                    valorMinimoContrato: empresa.comercial?.valorMinimoContrato,
+                    valorMaximoContrato: empresa.comercial?.valorMaximoContrato,
+                    taxaSucessoLicitacoes: empresa.comercial?.taxaSucessoLicitacoes,
+                    orgaosParceiros: empresa.comercial?.orgaosParceiros || []
+                },
+                // Campos legados (manter compatibilidade)
+                segmento: 'Não informado', // Pode ser derivado de setoresExperiencia
+                capacidadeOperacional: empresa.capacidades?.numeroFuncionarios ?
+                    `${empresa.capacidades.numeroFuncionarios} funcionários` : 'Não informado',
+                faturamento: empresa.financeiro?.faturamento,
+                capitalSocial: empresa.financeiro?.capitalSocial,
+                certificacoes: empresa.capacidades?.certificacoes || [],
                 documentosDisponiveis: {}
             };
             return context;

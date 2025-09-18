@@ -366,6 +366,83 @@ const updateStatusDocumento = async (documentoId, novoStatus) => {
         throw error;
     return data;
 };
+// ✅ NOVA FUNÇÃO: Buscar contexto completo da empresa para agentes
+const getEmpresaContextoCompleto = async (cnpj) => {
+    const cleanCnpj = cnpj.replace(/\D/g, '');
+    const { data, error } = await supabase
+        .from('empresa_contexto_completo')
+        .select('*')
+        .or(`cnpj.eq.${cleanCnpj},cnpj.eq.${cnpj}`)
+        .maybeSingle();
+    if (error) {
+        console.error('❌ [REPO] Erro ao buscar contexto da empresa:', error);
+        throw error;
+    }
+    if (!data) {
+        console.log(`⚠️ [REPO] Empresa não encontrada: ${cnpj}`);
+        return null;
+    }
+    console.log(`✅ [REPO] Contexto completo encontrado para empresa: ${data.nome}`);
+    // Transformar dados para formato esperado pelos agentes
+    return {
+        id: data.id,
+        nome: data.nome,
+        cnpj: data.cnpj,
+        razaoSocial: data.razao_social,
+        descricao: data.descricao,
+        porte: data.porte,
+        localizacao: {
+            cidade: data.cidade,
+            endereco: data.endereco,
+            raioDistancia: data.raio_distancia
+        },
+        // Core Business
+        palavrasChave: data.palavras_chave,
+        produtoServico: data.produto_servico,
+        produtos: data.produtos || [],
+        servicos: data.servicos || [],
+        // Dados Financeiros
+        financeiro: {
+            faturamento: data.faturamento,
+            capitalSocial: data.capitalSocial,
+            faturamentoMensal: data.faturamento_mensal,
+            margemLucroMedia: data.margem_lucro_media,
+            capitalGiroDisponivel: data.capital_giro_disponivel,
+            experienciaLicitacoesAnos: data.experiencia_licitacoes_anos,
+            numeroLicitacoesParticipadas: data.numero_licitacoes_participadas,
+            numeroLicitacoesVencidas: data.numero_licitacoes_vencidas,
+            capacidadeSeguroGarantia: data.capacidade_seguro_garantia
+        },
+        // Capacidades Técnicas/Operacionais
+        capacidades: {
+            capacidadeProducaoMensal: data.capacidade_producao_mensal,
+            numeroFuncionarios: data.numero_funcionarios,
+            certificacoes: data.certificacoes || [],
+            alcanceGeografico: data.alcance_geografico || [],
+            setoresExperiencia: data.setores_experiencia || [],
+            tempoMercadoAnos: data.tempo_mercado_anos,
+            prazoMinimoExecucao: data.prazo_minimo_execucao,
+            prazoMaximoExecucao: data.prazo_maximo_execucao,
+            capacidadeContratoSimultaneos: data.capacidade_contratos_simultaneos
+        },
+        // Situação Jurídica
+        juridico: {
+            situacaoReceitaFederal: data.situacao_receita_federal,
+            certidoesStatus: data.certidoes_status || {},
+            impedimentoLicitar: data.impedimento_licitar,
+            atestadosCapacidadeTecnica: data.atestados_capacidade_tecnica || []
+        },
+        // Perfil Comercial
+        comercial: {
+            modalidadesPreferenciais: data.modalidades_preferenciais || [],
+            margemCompetitiva: data.margem_competitiva,
+            valorMinimoContrato: data.valor_minimo_contrato,
+            valorMaximoContrato: data.valor_maximo_contrato,
+            taxaSucessoLicitacoes: data.taxa_sucesso_licitacoes,
+            orgaosParceiros: data.orgaos_parceiros || []
+        }
+    };
+};
 exports.default = {
     createEmpresa,
     getAllEmpresas,
@@ -379,5 +456,6 @@ exports.default = {
     getDocumentosByEmpresaId,
     deleteDocumento,
     updateDadosBancarios,
-    updateStatusDocumento
+    updateStatusDocumento,
+    getEmpresaContextoCompleto
 };

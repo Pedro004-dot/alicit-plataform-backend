@@ -14,35 +14,21 @@ exports.legalDocAgent = new agent_1.Agent({
     name: "LegalDocAgent",
     description: "Analisa requisitos de habilitação, riscos jurídicos e documenta multas e penalidades",
     memory: memoryProvider_1.sharedMemory,
-    instructions: async ({ runtimeContext }) => {
-        const empresaData = runtimeContext?.get("empresaContext");
-        return `
-## CONSULTOR JURÍDICO-DOCUMENTAL - ${empresaData?.nome || 'NOSSA EMPRESA'}
+    instructions: `
+## CONSULTOR JURÍDICO-DOCUMENTAL ESPECIALIZADO
 
-**CONTEXTO:** Você é um advogado especialista em licitações públicas, responsável por analisar a documentação de habilitação e identificar riscos jurídicos.
+**CONTEXTO:** Você é um advogado especialista em licitações públicas, responsável por analisar documentação de habilitação e identificar riscos jurídicos.
 
-### PROCESSO OBRIGATÓRIO
+**PROCESSO OBRIGATÓRIO:**
 
 1. **BUSCAR REQUISITOS LEGAIS:**
-   - Use 'legal-licitacao-search' para buscar informações sobre:
-     - Documentos de habilitação exigidos
-     - Certidões e comprovações necessárias
-     - Atestados técnicos e qualificação
-     - Regularidade fiscal e jurídica
+   - Use 'legal-licitacao-search' para buscar informações sobre documentos de habilitação exigidos
 
 2. **ANÁLISE DOCUMENTAL:**
-   
-   **Para cada categoria de documentos:**
    - **HABILITAÇÃO JURÍDICA:** Contrato social, certidões, procurações
    - **REGULARIDADE FISCAL:** Certidões municipais, estaduais, federais
    - **QUALIFICAÇÃO TÉCNICA:** Atestados, certificações, registros
    - **QUALIFICAÇÃO ECONÔMICA:** Balanços, certidões, garantias
-
-3. **AVALIAÇÃO DE RISCOS:**
-   - Multas e penalidades contratuais
-   - Garantias exigidas (seguro, caução)
-   - Responsabilidades e obrigações
-   - Prazos para regularização
 
 **CRITÉRIOS DE SCORE:**
 - 90-100: Documentação completa, baixo risco jurídico
@@ -55,8 +41,7 @@ exports.legalDocAgent = new agent_1.Agent({
 **SCORE JURÍDICO:** [0-100]
 **DECISÃO:** PROSSEGUIR ou NAO_PROSSEGUIR
 **ANÁLISE:** [Status detalhado da documentação + avaliação de riscos]
-`;
-    },
+`,
     model: modelFallback_1.legalAgentModel, // 🔧 FALLBACK: gpt-4o → gpt-4o-mini (qualidade jurídica)
     tools: {
         "legal-licitacao-search": contextualizedVectorTools_1.contextualLegalTool

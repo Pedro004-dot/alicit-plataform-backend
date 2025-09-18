@@ -221,7 +221,7 @@ export const contextualLegalTool = createTool({
   description: "Busca informações sobre documentos de habilitação, certidões exigidas, atestados técnicos, qualificação técnica e regularidade fiscal e jurídica",
   inputSchema: z.object({
     queryText: z.string().describe("Texto da query para busca vetorial"),
-    licitacaoId: z.string().describe("ID da licitação a ser analisada"), 
+    licitacaoId: z.string().optional().describe("ID da licitação (opcional, pode vir do runtime context)"), 
     topK: z.number().default(3).describe("Número de resultados a retornar (máximo 3 - otimizado para RAG)")
   }),
   execute: async ({ context, runtimeContext: originalRuntimeContext, mastra, tracingContext }) => {
@@ -238,8 +238,8 @@ export const contextualLegalTool = createTool({
     runtimeContext.set('filter', {
       numeroControlePNCP: licitacaoId
     });
-    runtimeContext.set('topK', Math.min(topK, 2)); // ✅ OTIMIZADO: Máximo 3 resultados conforme Mastra docs
-    runtimeContext.set('minScore', 0.85); // ✅ QUALIDADE: Filtrar resultados com baixa similaridade
+    runtimeContext.set('topK', Math.min(topK, 3)); // ✅ OTIMIZADO: Máximo 3 resultados conforme Mastra docs
+    runtimeContext.set('minScore', 0.75); // ✅ QUALIDADE: Filtrar resultados com baixa similaridade
     
     const result = await legalVectorTool.execute({
       context: { queryText, topK },

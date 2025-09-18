@@ -4,7 +4,7 @@
  * Arquitetura otimizada para análise progressiva de licitações
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sequentialAgents = exports.financialAgent = exports.legalDocAgent = exports.operationalAgent = exports.strategicFitAgent = void 0;
+exports.sequentialAgents = exports.reportAggregatorAgent = exports.financialAgent = exports.legalDocAgent = exports.operationalAgent = exports.strategicFitAgent = void 0;
 // Agentes do workflow sequencial
 var strategicFitAgent_1 = require("./strategicFitAgent");
 Object.defineProperty(exports, "strategicFitAgent", { enumerable: true, get: function () { return strategicFitAgent_1.strategicFitAgent; } });
@@ -14,11 +14,14 @@ var legalDocAgent_1 = require("./legalDocAgent");
 Object.defineProperty(exports, "legalDocAgent", { enumerable: true, get: function () { return legalDocAgent_1.legalDocAgent; } });
 var financialAgent_1 = require("./financialAgent");
 Object.defineProperty(exports, "financialAgent", { enumerable: true, get: function () { return financialAgent_1.financialAgent; } });
+var reportAggregatorAgent_1 = require("./reportAggregatorAgent");
+Object.defineProperty(exports, "reportAggregatorAgent", { enumerable: true, get: function () { return reportAggregatorAgent_1.reportAggregatorAgent; } });
 // Re-exportar em objeto para facilitar uso
 const strategicFitAgent_2 = require("./strategicFitAgent");
 const operationalAgent_2 = require("./operationalAgent");
 const legalDocAgent_2 = require("./legalDocAgent");
 const financialAgent_2 = require("./financialAgent");
+const reportAggregatorAgent_2 = require("./reportAggregatorAgent");
 // ✅ AGENTS SIMPLIFICADOS PARA DEBUG
 const simpleStrategicAgent_1 = require("../simpleStrategicAgent");
 const ultraSimpleAgent_1 = require("../ultraSimpleAgent");
@@ -31,4 +34,5 @@ exports.sequentialAgents = {
     operationalAgent_2.operationalAgent,
     legalDocAgent: legalDocAgent_2.legalDocAgent,
     financialAgent: financialAgent_2.financialAgent,
+    reportAggregatorAgent: reportAggregatorAgent_2.reportAggregatorAgent,
 };
