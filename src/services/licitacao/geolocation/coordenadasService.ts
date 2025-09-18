@@ -16,7 +16,7 @@ const carregarMunicipiosCSV = async (): Promise<void> => {
   try {
     // Usar caminho absoluto para garantir que encontre o arquivo
     // const csvPath = '/Users/pedrotorrezani/Documents/Programacao/alicit2.0/backend/src/municipios.csv';
-    const csvPath = path.join(__dirname, 'municipios.csv');
+    const csvPath = path.join(__dirname, '../../../municipios.csv');
     const csvContent = await fs.promises.readFile(csvPath, 'utf-8');
     const lines = csvContent.split('\n');
     
