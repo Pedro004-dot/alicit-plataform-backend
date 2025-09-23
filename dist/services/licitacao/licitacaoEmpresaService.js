@@ -4,6 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const licitacaoEmpresaRepository_1 = __importDefault(require("../../repositories/licitacaoEmpresaRepository"));
+const pineconeLicitacaoRepository_1 = __importDefault(require("../../repositories/pineconeLicitacaoRepository"));
+const licitacaoDecisaoRepository_1 = __importDefault(require("../../repositories/licitacaoDecisaoRepository"));
 const statusValidos = [
     "nao_definido", "selecionada", "nao_analisado", "em_analise", "analisado", "proposta", "enviada",
     "vencida", "recusada", "perdida"
@@ -42,6 +44,33 @@ const buscarOuCriar = async (numeroControlePNCP, empresaCnpj) => {
     if (existente) {
         return existente;
     }
+    // ✅ NOVA LÓGICA: Garantir que a licitação existe no Supabase antes de criar o relacionamento
+    console.log(`🔍 Verificando se licitação ${numeroControlePNCP} existe no Supabase...`);
+    try {
+        const licitacaoExistente = await licitacaoDecisaoRepository_1.default.getLicitacao(numeroControlePNCP);
+        if (!licitacaoExistente) {
+            console.log(`📥 Licitação ${numeroControlePNCP} não encontrada no Supabase, buscando no Pinecone...`);
+            // Buscar do Pinecone
+            const licitacaoPinecone = await pineconeLicitacaoRepository_1.default.getLicitacao(numeroControlePNCP);
+            if (licitacaoPinecone) {
+                console.log(`💾 Salvando licitação ${numeroControlePNCP} do Pinecone para o Supabase...`);
+                await licitacaoDecisaoRepository_1.default.salvarLicitacaoCompleta(licitacaoPinecone);
+                console.log(`✅ Licitação ${numeroControlePNCP} sincronizada com sucesso`);
+            }
+            else {
+                console.warn(`⚠️ Licitação ${numeroControlePNCP} não encontrada nem no Supabase nem no Pinecone`);
+                throw new Error(`Licitação ${numeroControlePNCP} não encontrada`);
+            }
+        }
+        else {
+            console.log(`✅ Licitação ${numeroControlePNCP} já existe no Supabase`);
+        }
+    }
+    catch (error) {
+        console.error(`❌ Erro ao verificar/sincronizar licitação ${numeroControlePNCP}:`, error);
+        throw error;
+    }
+    // Agora criar o relacionamento licitacao_empresa
     return await criar({
         numeroControlePNCP,
         cnpjEmpresa: empresaCnpj,
@@ -58,6 +87,13 @@ const atualizarStatusPorChaves = async (numeroControlePNCP, empresaCnpj, novoSta
 const deletar = async (id) => {
     return await licitacaoEmpresaRepository_1.default.deletar(id);
 };
+const deletarPorStatus = async (statusList) => {
+    const statusInvalidos = statusList.filter(status => !validarStatus(status));
+    if (statusInvalidos.length > 0) {
+        throw new Error(`Status inválidos: ${statusInvalidos.join(', ')}`);
+    }
+    return await licitacaoEmpresaRepository_1.default.deletarPorStatus(statusList);
+};
 exports.default = {
     criar,
     atualizarStatus,
@@ -66,5 +102,6 @@ exports.default = {
     buscarPorId,
     buscarOuCriar,
     deletar,
+    deletarPorStatus,
     statusValidos
 };

@@ -31,6 +31,7 @@ router.put('/empresa/status', statusLicitacaoEmpresaController_1.default.atualiz
 router.get('/empresa/:cnpj', statusLicitacaoEmpresaController_1.default.listarTodas);
 router.get('/empresa/licitacao/:id', statusLicitacaoEmpresaController_1.default.buscarUma);
 router.delete('/empresa/:id', statusLicitacaoEmpresaController_1.default.deletar);
+router.delete('/empresa/status', statusLicitacaoEmpresaController_1.default.deletarPorStatus);
 // rotas de recomendacoes
 router.get('/recomendacoes/:cnpj', recomendacaoController_1.default.listarRecomendacoes);
 // router.delete('/recomendacoes/remover', recomendacaoController.removerRecomendacao);

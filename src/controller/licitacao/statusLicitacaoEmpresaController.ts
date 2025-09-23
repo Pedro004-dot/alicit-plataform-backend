@@ -77,4 +77,23 @@ const deletar = async (req: Request, res: Response) => {
   }
 };
 
-export default { criar, atualizarStatus, atualizarStatusPorChaves, listarTodas, buscarUma, deletar };
+const deletarPorStatus = async (req: Request, res: Response) => {
+  try {
+    const { statusList } = req.body;
+    
+    if (!Array.isArray(statusList) || statusList.length === 0) {
+      return res.status(400).json({ error: "Lista de status deve ser um array não vazio" });
+    }
+
+    await licitacaoEmpresaService.deletarPorStatus(statusList);
+    res.status(200).json({ 
+      success: true, 
+      message: `Licitações com status [${statusList.join(', ')}] foram deletadas` 
+    });
+  } catch (error) {
+    console.error("Erro ao deletar licitacoes por status:", error);
+    res.status(500).json({ error: "Erro ao deletar licitacoes por status" });
+  }
+};
+
+export default { criar, atualizarStatus, atualizarStatusPorChaves, listarTodas, buscarUma, deletar, deletarPorStatus };

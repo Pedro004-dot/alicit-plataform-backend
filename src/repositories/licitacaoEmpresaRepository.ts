@@ -149,11 +149,23 @@ const deletar = async (id: number) => {
   }
 };
 
+const deletarPorStatus = async (statusList: string[]) => {
+  const { error } = await supabase
+    .from('licitacoes_empresa')
+    .delete()
+    .in('status', statusList);
+
+  if (error) {
+    throw new Error(`Erro ao deletar licitacoes por status: ${error.message}`);
+  }
+};
+
 export default { 
   criar, 
   atualizarStatus, 
   listarPorEmpresa, 
   buscarPorId, 
   buscarPorChaves,
-  deletar 
+  deletar,
+  deletarPorStatus
 };

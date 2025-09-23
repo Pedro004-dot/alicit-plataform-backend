@@ -1,4 +1,6 @@
 import licitacaoEmpresaRepository from "../../repositories/licitacaoEmpresaRepository";
+import pineconeLicitacaoRepository from "../../repositories/pineconeLicitacaoRepository";
+import LicitacaoDecisaoRepository from "../../repositories/licitacaoDecisaoRepository";
 
 interface CriarLicitacaoEmpresaInput {
   cnpjEmpresa: string;
@@ -55,6 +57,35 @@ const buscarOuCriar = async (numeroControlePNCP: string, empresaCnpj: string) =>
     return existente;
   }
   
+  // ✅ NOVA LÓGICA: Garantir que a licitação existe no Supabase antes de criar o relacionamento
+  console.log(`🔍 Verificando se licitação ${numeroControlePNCP} existe no Supabase...`);
+  
+  try {
+    const licitacaoExistente = await LicitacaoDecisaoRepository.getLicitacao(numeroControlePNCP);
+    
+    if (!licitacaoExistente) {
+      console.log(`📥 Licitação ${numeroControlePNCP} não encontrada no Supabase, buscando no Pinecone...`);
+      
+      // Buscar do Pinecone
+      const licitacaoPinecone = await pineconeLicitacaoRepository.getLicitacao(numeroControlePNCP);
+      
+      if (licitacaoPinecone) {
+        console.log(`💾 Salvando licitação ${numeroControlePNCP} do Pinecone para o Supabase...`);
+        await LicitacaoDecisaoRepository.salvarLicitacaoCompleta(licitacaoPinecone);
+        console.log(`✅ Licitação ${numeroControlePNCP} sincronizada com sucesso`);
+      } else {
+        console.warn(`⚠️ Licitação ${numeroControlePNCP} não encontrada nem no Supabase nem no Pinecone`);
+        throw new Error(`Licitação ${numeroControlePNCP} não encontrada`);
+      }
+    } else {
+      console.log(`✅ Licitação ${numeroControlePNCP} já existe no Supabase`);
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao verificar/sincronizar licitação ${numeroControlePNCP}:`, error);
+    throw error;
+  }
+  
+  // Agora criar o relacionamento licitacao_empresa
   return await criar({
     numeroControlePNCP,
     cnpjEmpresa: empresaCnpj,
@@ -76,6 +107,16 @@ const deletar = async (id: number) => {
   return await licitacaoEmpresaRepository.deletar(id);
 };
 
+const deletarPorStatus = async (statusList: string[]) => {
+  const statusInvalidos = statusList.filter(status => !validarStatus(status));
+  
+  if (statusInvalidos.length > 0) {
+    throw new Error(`Status inválidos: ${statusInvalidos.join(', ')}`);
+  }
+
+  return await licitacaoEmpresaRepository.deletarPorStatus(statusList);
+};
+
 export default { 
   criar, 
   atualizarStatus, 
@@ -83,6 +124,7 @@ export default {
   listarPorEmpresa, 
   buscarPorId, 
   buscarOuCriar,
-  deletar, 
+  deletar,
+  deletarPorStatus,
   statusValidos 
 };

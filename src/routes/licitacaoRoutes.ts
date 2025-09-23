@@ -29,6 +29,7 @@ router.put('/empresa/status', licitacaoEmpresaController.atualizarStatusPorChave
 router.get('/empresa/:cnpj', licitacaoEmpresaController.listarTodas);
 router.get('/empresa/licitacao/:id', licitacaoEmpresaController.buscarUma);
 router.delete('/empresa/:id', licitacaoEmpresaController.deletar);
+router.delete('/empresa/status', licitacaoEmpresaController.deletarPorStatus);
 
 // rotas de recomendacoes
 router.get('/recomendacoes/:cnpj', recomendacaoController.listarRecomendacoes);
