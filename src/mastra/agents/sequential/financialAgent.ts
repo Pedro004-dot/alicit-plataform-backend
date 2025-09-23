@@ -5,7 +5,7 @@ import { financialAgentModel } from "../../config/modelFallback";
 import { createLicitacaoMemory } from "../../memory/workingMemoryConfig";
 // Tools auxiliares removidas para padronizar com modelo RAG único
 import { contextualFinancialTool } from "../../tools/contextualizedVectorTools";
-import { EmpresaContext } from "../../../services/edital/analysisService";
+import { EmpresaContext } from "../../../types/empresaTypes";
 
 /**
  * Agente 4: Análise Financeira

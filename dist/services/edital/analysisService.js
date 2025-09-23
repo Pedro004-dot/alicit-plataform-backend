@@ -36,10 +36,10 @@ class EditalAnalysisService {
                     empresaContext: empresaContext || undefined
                 };
                 // TIMEOUT global para todo o workflow (120 segundos)
-                const WORKFLOW_TIMEOUT = 320000;
+                const WORKFLOW_TIMEOUT = 420000;
                 workflowResult = await Promise.race([
                     (async () => {
-                        const result = await run.start({ inputData });
+                        const result = await run.start({ inputData: inputData });
                         return result;
                     })(),
                     new Promise((_, reject) => setTimeout(() => {
@@ -49,7 +49,6 @@ class EditalAnalysisService {
             }
             catch (workflowErr) {
                 console.error('❌ ERRO NO WORKFLOW:', workflowErr);
-                console.error('❌ ERRO STACK:', workflowErr.stack);
                 workflowError = workflowErr.message || 'Erro desconhecido no workflow';
             }
             let finalReport;
@@ -72,61 +71,51 @@ class EditalAnalysisService {
                 const strategicAgent = agentsData.strategic;
                 const operationalAgent = agentsData.operational;
                 const legalAgent = agentsData.legal;
-                console.log('✅ [RESULTADO] Resultado workflow estruturado:', {
-                    finalDecision: actualResult?.finalDecision,
-                    consolidatedScore: actualResult?.consolidatedScore,
-                    strategicDecision: strategicAgent?.decision,
-                    strategicScore: strategicAgent?.score,
-                    operationalDecision: operationalAgent?.decision,
-                    operationalScore: operationalAgent?.score,
-                    legalDecision: legalAgent?.decision,
-                    legalScore: legalAgent?.score,
-                    executiveSummaryLength: actualResult?.executiveSummary?.length || 0
-                });
                 // Relatório com análises estratégica e operacional
                 if (actualResult) {
                     finalReport = `RELATÓRIO DE ANÁLISE COMPLETA
 
-Licitação: ${request.licitacaoId}
-Empresa: ${request.empresaCNPJ}
-Documentos processados: ${ragResult.documentsCount}
+          Licitação: ${request.licitacaoId}
+          Empresa: ${request.empresaCNPJ}
+          Documentos processados: ${ragResult.documentsCount}
 
-=== RESULTADO CONSOLIDADO ===
-DECISÃO FINAL: ${actualResult.finalDecision || 'N/A'}
-SCORE CONSOLIDADO: ${actualResult.consolidatedScore || 0}/100
+          === RESULTADO CONSOLIDADO ===
+          DECISÃO FINAL: ${actualResult.finalDecision || 'N/A'}
+          SCORE CONSOLIDADO: ${actualResult.consolidatedScore || 0}/100
 
-=== ANÁLISES DETALHADAS ===
+          === ANÁLISES DETALHADAS ===
 
-📊 ANÁLISE ESTRATÉGICA (Score: ${strategicAgent?.score || 0}/100 - ${strategicAgent?.decision || 'N/A'})
-${strategicAgent?.analysis || 'N/A'}
+          📊 ANÁLISE ESTRATÉGICA (Score: ${strategicAgent?.score || 0}/100 - ${strategicAgent?.decision || 'N/A'})
+          ${strategicAgent?.analysis || 'N/A'}
 
-${operationalAgent ? `
-⚙️ ANÁLISE OPERACIONAL (Score: ${operationalAgent.score || 0}/100 - ${operationalAgent.decision})
-${operationalAgent.analysis || 'N/A'}
-` : '🛑 ANÁLISE OPERACIONAL: Não executada (strategic foi NAO_PROSSEGUIR)'}
+          ${operationalAgent ? `
+          ⚙️ ANÁLISE OPERACIONAL (Score: ${operationalAgent.score || 0}/100 - ${operationalAgent.decision})
+          ${operationalAgent.analysis || 'N/A'}
+          ` : '🛑 ANÁLISE OPERACIONAL: Não executada (strategic foi NAO_PROSSEGUIR)'}
 
-${legalAgent ? `
-⚖️ ANÁLISE JURÍDICO-DOCUMENTAL (Score: ${legalAgent.score || 0}/100 - ${legalAgent.decision})
-${legalAgent.analysis || 'N/A'}
-` : '🛑 ANÁLISE LEGAL: Não executada (análise anterior foi NAO_PROSSEGUIR)'}
+          ${legalAgent ? `
+          ⚖️ ANÁLISE JURÍDICO-DOCUMENTAL (Score: ${legalAgent.score || 0}/100 - ${legalAgent.decision})
+          ${legalAgent.analysis || 'N/A'}
+          ` : '🛑 ANÁLISE LEGAL: Não executada (análise anterior foi NAO_PROSSEGUIR)'}
 
-📋 SUMÁRIO EXECUTIVO
-${actualResult.executiveSummary || 'N/A'}`;
+          📋 SUMÁRIO EXECUTIVO
+          ${actualResult.executiveSummary || 'N/A'}`;
                     validationScore = actualResult.consolidatedScore || 0;
                 }
                 else {
                     console.log('❌ [ANALYSIS SERVICE] actualResult é null - usando relatório de erro');
                     finalReport = `RELATÓRIO DE ANÁLISE TÉCNICA - ERRO NA EXTRAÇÃO DO RESULTADO
 
-Licitação: ${request.licitacaoId}
-Empresa: ${request.empresaCNPJ}
+          Licitação: ${request.licitacaoId}
+          Empresa: ${request.empresaCNPJ}
 
-Status: Erro na extração do resultado do workflow
-Documentos processados: ${ragResult.documentsCount}
+          Status: Erro na extração do resultado do workflow
+          Documentos processados: ${ragResult.documentsCount}
 
-O workflow executou, mas não foi possível extrair o resultado corretamente. Estrutura retornada: ${JSON.stringify(workflowResult, null, 2)}`;
+          O workflow executou, mas não foi possível extrair o resultado corretamente. Estrutura retornada: ${JSON.stringify(workflowResult, null, 2)}`;
                     validationScore = 0;
                 }
+                console.log('✅ [ANALYSIS SERVICE] Workflow executado com sucesso', finalReport);
             }
             else {
                 console.log('❌ [ANALYSIS SERVICE] Workflow falhou, usando relatório de erro');
@@ -154,7 +143,8 @@ O workflow executou, mas não foi possível extrair o resultado corretamente. Es
                         processedAt: new Date().toISOString(),
                         documentsAnalyzed: ragResult.documentsCount,
                         totalCharacters: finalReport?.length || 0
-                    }, dadosPdf);
+                    }, dadosPdf, finalReport // 🚀 NOVO: Passar o markdown para processamento estruturado
+                    );
                     console.log('✅ Relatório salvo no Supabase Storage com dados estruturados');
                 }
                 catch (storageError) {
@@ -193,11 +183,7 @@ O workflow executou, mas não foi possível extrair o resultado corretamente. Es
             return finalResult;
         }
         catch (error) {
-            console.error('❌ ERRO CRÍTICO em analyzeEdital:', error);
-            console.error('❌ ERRO STACK:', error.stack);
-            console.error('❌ ERRO TYPE:', typeof error);
-            console.error('❌ ERRO MESSAGE:', error.message);
-            console.error('❌ ERRO DETAILS:', JSON.stringify(error, null, 2));
+            console.error(`❌ Erro no processamento da licitação ${request.licitacaoId}:`, error);
             return {
                 licitacaoId: request.licitacaoId,
                 technicalSummary: "",
@@ -216,85 +202,13 @@ O workflow executou, mas não foi possível extrair o resultado corretamente. Es
             return null;
         }
         try {
-            // ✅ USAR NOVA FUNÇÃO: Buscar contexto completo da empresa
-            console.log(`🔍 [ANALYSIS SERVICE] Buscando contexto completo para empresa: ${empresaCNPJ}`);
             const empresa = await empresaRepository_1.default.getEmpresaContextoCompleto(empresaCNPJ);
             if (!empresa) {
                 console.log(`❌ Empresa não encontrada: ${empresaCNPJ}`);
                 return null;
             }
-            console.log(`✅ [ANALYSIS SERVICE] Empresa encontrada: ${empresa.nome} - Dados carregados:`, {
-                produtos: empresa.produtos?.length || 0,
-                servicos: empresa.servicos?.length || 0,
-                temDadosFinanceiros: !!(empresa.financeiro?.faturamentoMensal),
-                temCapacidades: !!(empresa.capacidades?.numeroFuncionarios),
-                situacaoJuridica: empresa.juridico?.situacaoReceitaFederal
-            });
-            const context = {
-                // Dados Básicos
-                nome: empresa.nome || 'Não informado',
-                cnpj: empresa.cnpj || empresaCNPJ,
-                razaoSocial: empresa.razaoSocial || empresa.nome,
-                porte: (Array.isArray(empresa.porte) ? empresa.porte[0] : empresa.porte) || "Médio",
-                descricao: empresa.descricao || 'Não informado',
-                // Core Business - Dados estruturados
-                produtos: empresa.produtos || [],
-                servicos: empresa.servicos || [],
-                palavrasChave: empresa.palavrasChave || '',
-                produtoServico: empresa.produtoServico || '',
-                // Localização
-                localizacao: empresa.localizacao?.cidade || 'Não informado',
-                endereco: empresa.localizacao?.endereco || 'Não informado',
-                raioDistancia: empresa.localizacao?.raioDistancia || 0,
-                // ✅ DADOS FINANCEIROS COMPLETOS
-                financeiro: {
-                    faturamento: empresa.financeiro?.faturamento,
-                    faturamentoMensal: empresa.financeiro?.faturamentoMensal,
-                    capitalSocial: empresa.financeiro?.capitalSocial,
-                    capitalGiroDisponivel: empresa.financeiro?.capitalGiroDisponivel,
-                    margemLucroMedia: empresa.financeiro?.margemLucroMedia,
-                    capacidadeSeguroGarantia: empresa.financeiro?.capacidadeSeguroGarantia,
-                    experienciaLicitacoesAnos: empresa.financeiro?.experienciaLicitacoesAnos,
-                    numeroLicitacoesVencidas: empresa.financeiro?.numeroLicitacoesVencidas,
-                    numeroLicitacoesParticipadas: empresa.financeiro?.numeroLicitacoesParticipadas
-                },
-                // ✅ CAPACIDADES OPERACIONAIS/TÉCNICAS
-                capacidades: {
-                    capacidadeProducaoMensal: empresa.capacidades?.capacidadeProducaoMensal,
-                    numeroFuncionarios: empresa.capacidades?.numeroFuncionarios,
-                    certificacoes: empresa.capacidades?.certificacoes || [],
-                    alcanceGeografico: empresa.capacidades?.alcanceGeografico || [],
-                    setoresExperiencia: empresa.capacidades?.setoresExperiencia || [],
-                    tempoMercadoAnos: empresa.capacidades?.tempoMercadoAnos,
-                    prazoMinimoExecucao: empresa.capacidades?.prazoMinimoExecucao,
-                    prazoMaximoExecucao: empresa.capacidades?.prazoMaximoExecucao,
-                    capacidadeContratoSimultaneos: empresa.capacidades?.capacidadeContratoSimultaneos
-                },
-                // ✅ SITUAÇÃO JURÍDICA
-                juridico: {
-                    situacaoReceitaFederal: empresa.juridico?.situacaoReceitaFederal || 'ATIVA',
-                    certidoesStatus: empresa.juridico?.certidoesStatus || {},
-                    impedimentoLicitar: empresa.juridico?.impedimentoLicitar || false,
-                    atestadosCapacidadeTecnica: empresa.juridico?.atestadosCapacidadeTecnica || []
-                },
-                // ✅ PERFIL COMERCIAL
-                comercial: {
-                    modalidadesPreferenciais: empresa.comercial?.modalidadesPreferenciais || [],
-                    margemCompetitiva: empresa.comercial?.margemCompetitiva,
-                    valorMinimoContrato: empresa.comercial?.valorMinimoContrato,
-                    valorMaximoContrato: empresa.comercial?.valorMaximoContrato,
-                    taxaSucessoLicitacoes: empresa.comercial?.taxaSucessoLicitacoes,
-                    orgaosParceiros: empresa.comercial?.orgaosParceiros || []
-                },
-                // Campos legados (manter compatibilidade)
-                segmento: 'Não informado', // Pode ser derivado de setoresExperiencia
-                capacidadeOperacional: empresa.capacidades?.numeroFuncionarios ?
-                    `${empresa.capacidades.numeroFuncionarios} funcionários` : 'Não informado',
-                faturamento: empresa.financeiro?.faturamento,
-                capitalSocial: empresa.financeiro?.capitalSocial,
-                certificacoes: empresa.capacidades?.certificacoes || [],
-                documentosDisponiveis: {}
-            };
+            const context = empresa;
+            console.log(`✅ [ANALYSIS SERVICE] Contexto completo encontrado para empresa: ${empresaCNPJ}`, context);
             return context;
         }
         catch (error) {

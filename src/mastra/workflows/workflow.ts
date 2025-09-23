@@ -89,8 +89,7 @@ const reportAggregatorStep = createStep({
       const licitacaoId = (runtimeContext?.get('licitacaoId') as string) || 'N/A';
       const empresaContext = runtimeContext?.get('empresaContext') as any;
       
-      console.log(`📊 [REPORT AGGREGATOR] Processando licitação: ${licitacaoId}`);
-      console.log(`📊 [REPORT AGGREGATOR] Empresa: ${empresaContext?.nome || 'N/A'}`);
+      console.log(`📊 [REPORT AGGREGATOR] Processando licitação: ${licitacaoId} da empresa: ${empresaContext?.nome || 'N/A'}`);
       
       // Gerar relatório executivo detalhado
       const executiveReport = await executeReportAggregator(
@@ -98,16 +97,15 @@ const reportAggregatorStep = createStep({
         agents,
         empresaContext
       );
-      
+
+      console.log(`🚨 [REPORT AGGREGATOR] Resultado: ${executiveReport}`);
       // Calcular nível de risco
       const riskLevel = calculateRiskLevel(agents, consolidatedScore);
       
       // Extrair alertas chave
       const keyAlerts = extractKeyAlerts(agents, licitacaoId);
+
       
-      console.log(`✅ [REPORT AGGREGATOR] Relatório executivo gerado com sucesso`);
-      console.log(`📊 [REPORT AGGREGATOR] Nível de Risco: ${riskLevel}`);
-      console.log(`🚨 [REPORT AGGREGATOR] Alertas: ${keyAlerts.length} identificados`);
       
       return {
         finalDecision,

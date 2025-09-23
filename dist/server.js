@@ -9,13 +9,13 @@ globalThis.___MASTRA_TELEMETRY___ = true;
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const licitacaoRoutes_1 = __importDefault(require("./routes/licitacaoRoutes"));
-const analysisRoutes_1 = __importDefault(require("./routes/analysisRoutes"));
 const empresaRoutes_1 = __importDefault(require("./routes/empresaRoutes"));
 const licitacaoDocumentosRoutes_1 = __importDefault(require("./routes/licitacaoDocumentosRoutes"));
 const relatoriosRoutes_1 = __importDefault(require("./routes/relatoriosRoutes"));
 const pineconeRepository_1 = require("./repositories/pineconeRepository");
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const analysisRoutes_1 = __importDefault(require("./routes/analysisRoutes"));
 const app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || '3002', 10);
 // Configuração CORS para suportar múltiplos ambientes
@@ -60,8 +60,8 @@ app.get('/health', (req, res) => {
     });
 });
 app.use('/licitacoes', licitacaoRoutes_1.default);
-app.use('/licitacoes-documentos', licitacaoDocumentosRoutes_1.default);
 app.use('/edital', analysisRoutes_1.default);
+app.use('/licitacoes-documentos', licitacaoDocumentosRoutes_1.default);
 app.use('/relatorios', relatoriosRoutes_1.default);
 app.use('/empresa', empresaRoutes_1.default);
 app.use('/user', userRoutes_1.default);
@@ -91,11 +91,6 @@ const initializePinecone = async () => {
         console.error('❌ Erro ao inicializar Pinecone:', error);
         console.log('⚠️ Sistema continuará funcionando sem Pinecone - funcionalidades de RAG podem ficar limitadas');
     }
-};
-// Inicializar Pinecone de forma assíncrona para Vercel
-const initApp = async () => {
-    await initializePinecone();
-    return app;
 };
 // Iniciar servidor sempre (Railway, desenvolvimento, etc)
 app.listen(PORT, async () => {

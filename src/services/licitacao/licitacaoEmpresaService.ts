@@ -7,7 +7,7 @@ interface CriarLicitacaoEmpresaInput {
 }
 
 const statusValidos = [
-  "nao_definido", "em_analise", "proposta", "enviada", 
+  "nao_definido", "selecionada", "nao_analisado", "em_analise", "analisado", "proposta", "enviada", 
   "vencida", "recusada", "perdida"
 ];
 

@@ -12,7 +12,10 @@ interface FindRequest {
   dataInicio?: string;
   dataFim?: string;
   fonte?: string;
+  raioDistancia?: number;
+  cidade_radar?: string;
 }
+
 
 const findWithKeywordAndFilters = async (findRequest: FindRequest): Promise<PNCPLicitacao[]> => {
   try {
@@ -38,16 +41,17 @@ const findWithKeywordAndFilters = async (findRequest: FindRequest): Promise<PNCP
       cnpj: findRequest.cnpj,
       termosInteresse: [findRequest.palavraChave],
       valorMinimo: findRequest.valorMinimo,
-      valorMaximo: findRequest.valorMaximo
+      valorMaximo: findRequest.valorMaximo,
+      raioDistancia: findRequest.raioDistancia,
+      cidadeRadar: findRequest.cidade_radar,
     };
     
     // Aplicar filtros usando função existente
-    // const resultadoFiltros = await aplicarFiltrosAtivos(licitacoesFiltradas, empresaPerfil);
-    
+    const resultadoFiltros = await aplicarFiltrosAtivos(licitacoesFiltradas, empresaPerfil);
+
     // console.log(`✅ Busca manual concluída: ${resultadoFiltros.licitacoesFiltradas.length} resultados finais`);
-    // return resultadoFiltros.licitacoesFiltradas;
-    console.log(`✅ Busca manual concluída: ${licitacoesFiltradas.length} resultados finais`);
-    return licitacoesFiltradas;
+    return resultadoFiltros.licitacoesFiltradas;
+ 
     
   } catch (error) {
     console.error('❌ Erro na busca manual:', error);

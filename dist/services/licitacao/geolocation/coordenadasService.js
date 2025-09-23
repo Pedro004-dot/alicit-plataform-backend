@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.clearCoordenadasCache = exports.getCoordenadasCidade = void 0;
 const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 // Cache para coordenadas de cidades (evita múltiplas leituras do CSV)
 const coordenadasCache = new Map();
 let municipios = [];
@@ -47,7 +48,8 @@ const carregarMunicipiosCSV = async () => {
         return;
     try {
         // Usar caminho absoluto para garantir que encontre o arquivo
-        const csvPath = '/Users/pedrotorrezani/Documents/Programacao/alicit2.0/backend/src/municipios.csv';
+        // const csvPath = '/Users/pedrotorrezani/Documents/Programacao/alicit2.0/backend/src/municipios.csv';
+        const csvPath = path.join(__dirname, '../../../municipios.csv');
         const csvContent = await fs.promises.readFile(csvPath, 'utf-8');
         const lines = csvContent.split('\n');
         municipios = [];

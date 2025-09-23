@@ -10,6 +10,8 @@ interface FindRequest {
   dataInicio?: string;
   dataFim?: string;
   fonte?: string;
+  raioDistancia?: number;
+  cidade_radar?: string;
 }
 
 const findLicitacao = async (req: Request, res: Response) => {
@@ -17,9 +19,9 @@ const findLicitacao = async (req: Request, res: Response) => {
     const findRequest: FindRequest = req.body;
     
     // Validação obrigatória
-    if (!findRequest.cnpj || !findRequest.palavraChave) {
+    if ( !findRequest.palavraChave) {
       return res.status(400).json({ 
-        error: "CNPJ e palavraChave são obrigatórios" 
+        error: "A palavraChave é obrigatória" 
       });
     }
 

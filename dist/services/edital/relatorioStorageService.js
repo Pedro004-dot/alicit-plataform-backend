@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RelatorioStorageService = exports.TipoRelatorio = void 0;
 const relatoriosTecnicosRepository_1 = __importDefault(require("../../repositories/relatoriosTecnicosRepository"));
 const licitacaoEmpresaRepository_1 = __importDefault(require("../../repositories/licitacaoEmpresaRepository"));
+const relatorioProcessorService_1 = require("./relatorioProcessorService");
 const fs = __importStar(require("fs"));
 var TipoRelatorio;
 (function (TipoRelatorio) {
@@ -48,8 +49,23 @@ var TipoRelatorio;
     TipoRelatorio["ACOMPANHAMENTO"] = "acompanhamento";
 })(TipoRelatorio || (exports.TipoRelatorio = TipoRelatorio = {}));
 class RelatorioStorageService {
-    async salvarRelatorio(empresaCNPJ, numeroControlePNCP, pdfPath, tipo = TipoRelatorio.ANALISE_COMPLETA, metadados, dadosPdf) {
+    constructor() {
+        this.relatorioProcessor = new relatorioProcessorService_1.RelatorioProcessorService();
+    }
+    async salvarRelatorio(empresaCNPJ, numeroControlePNCP, pdfPath, tipo = TipoRelatorio.ANALISE_COMPLETA, metadados, dadosPdf, markdownContent) {
         console.log(`💾 Salvando relatório ${tipo} para empresa ${empresaCNPJ} - licitação ${numeroControlePNCP}`);
+        // 🚀 NOVO: Processar dados estruturados se markdownContent for fornecido
+        if (markdownContent) {
+            try {
+                console.log(`📊 Processando dados estruturados para ${numeroControlePNCP}`);
+                await this.relatorioProcessor.processarRelatorio(markdownContent, numeroControlePNCP, empresaCNPJ);
+                console.log(`✅ Dados estruturados salvos com sucesso`);
+            }
+            catch (error) {
+                console.error(`❌ Erro ao processar dados estruturados:`, error);
+                // Não bloqueia o salvamento do PDF se processar estruturado falhar
+            }
+        }
         const licitacaoEmpresa = await this.buscarLicitacaoEmpresa(empresaCNPJ, numeroControlePNCP);
         if (!licitacaoEmpresa) {
             throw new Error(`Relação licitação-empresa não encontrada para ${empresaCNPJ} - ${numeroControlePNCP}`);

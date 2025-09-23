@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const pineconeLicitacaoRepository_1 = __importDefault(require("../../repositories/pineconeLicitacaoRepository"));
 const geolocation_1 = require("./geolocation");
+const filters_1 = require("./filters");
 const findWithKeywordAndFilters = async (findRequest) => {
     try {
         // Buscar todas as licitações
@@ -23,14 +24,14 @@ const findWithKeywordAndFilters = async (findRequest) => {
             cnpj: findRequest.cnpj,
             termosInteresse: [findRequest.palavraChave],
             valorMinimo: findRequest.valorMinimo,
-            valorMaximo: findRequest.valorMaximo
+            valorMaximo: findRequest.valorMaximo,
+            raioDistancia: findRequest.raioDistancia,
+            cidadeRadar: findRequest.cidade_radar,
         };
         // Aplicar filtros usando função existente
-        // const resultadoFiltros = await aplicarFiltrosAtivos(licitacoesFiltradas, empresaPerfil);
+        const resultadoFiltros = await (0, filters_1.aplicarFiltrosAtivos)(licitacoesFiltradas, empresaPerfil);
         // console.log(`✅ Busca manual concluída: ${resultadoFiltros.licitacoesFiltradas.length} resultados finais`);
-        // return resultadoFiltros.licitacoesFiltradas;
-        console.log(`✅ Busca manual concluída: ${licitacoesFiltradas.length} resultados finais`);
-        return licitacoesFiltradas;
+        return resultadoFiltros.licitacoesFiltradas;
     }
     catch (error) {
         console.error('❌ Erro na busca manual:', error);

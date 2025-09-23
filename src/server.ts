@@ -6,13 +6,13 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import licitacaoRoutes from './routes/licitacaoRoutes';
-import editalAnalysisRoutes from './routes/analysisRoutes';
 import empresaRoutes from './routes/empresaRoutes';
 import licitacaoDocumentosRoutes from './routes/licitacaoDocumentosRoutes';
 import relatoriosRoutes from './routes/relatoriosRoutes';
 import { PineconeRepository } from './repositories/pineconeRepository';
 import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
+import editalAnalysisRoutes from './routes/analysisRoutes';
 
 
 const app = express();
@@ -63,8 +63,8 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/licitacoes', licitacaoRoutes);
-app.use('/licitacoes-documentos', licitacaoDocumentosRoutes);
 app.use('/edital', editalAnalysisRoutes);
+app.use('/licitacoes-documentos', licitacaoDocumentosRoutes);
 app.use('/relatorios', relatoriosRoutes);
 app.use('/empresa', empresaRoutes);
 app.use('/user', userRoutes);
@@ -94,12 +94,6 @@ const initializePinecone = async () => {
     console.error('❌ Erro ao inicializar Pinecone:', error);
     console.log('⚠️ Sistema continuará funcionando sem Pinecone - funcionalidades de RAG podem ficar limitadas');
   }
-};
-
-// Inicializar Pinecone de forma assíncrona para Vercel
-const initApp = async () => {
-  await initializePinecone();
-  return app;
 };
 
 // Iniciar servidor sempre (Railway, desenvolvimento, etc)

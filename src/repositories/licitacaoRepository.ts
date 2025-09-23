@@ -205,6 +205,7 @@ class LicitacaoRepository {
       console.warn(`⚠️ Erro ao deletar arquivo do storage: ${error.message}`);
     }
   }
+
 }
 
 export default new LicitacaoRepository();

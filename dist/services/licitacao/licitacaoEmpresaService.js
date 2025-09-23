@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const licitacaoEmpresaRepository_1 = __importDefault(require("../../repositories/licitacaoEmpresaRepository"));
 const statusValidos = [
-    "nao_definido", "em_analise", "proposta", "enviada",
+    "nao_definido", "selecionada", "nao_analisado", "em_analise", "analisado", "proposta", "enviada",
     "vencida", "recusada", "perdida"
 ];
 const validarStatus = (status) => {

@@ -8,9 +8,9 @@ const findLicitacao = async (req, res) => {
     try {
         const findRequest = req.body;
         // Validação obrigatória
-        if (!findRequest.cnpj || !findRequest.palavraChave) {
+        if (!findRequest.palavraChave) {
             return res.status(400).json({
-                error: "CNPJ e palavraChave são obrigatórios"
+                error: "A palavraChave é obrigatória"
             });
         }
         // Validação dos valores

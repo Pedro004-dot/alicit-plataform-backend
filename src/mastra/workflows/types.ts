@@ -81,10 +81,26 @@ export const workflowInputSchema = z.object({
   }).optional(),
 });
 
+// Schema para dados concretos extraídos pelos agentes
+export const concreteDataSchema = z.object({
+  // Dados gerais da licitação (todos os agentes podem extrair)
+  valorEstimado: z.number().optional(),
+  modalidade: z.string().optional(),
+  prazoExecucao: z.number().optional(),
+  criterioJulgamento: z.string().optional(),
+  orgaoLicitante: z.string().optional(),
+  objeto: z.string().optional(),
+  localEntrega: z.string().optional(),
+  
+  // Dados específicos por tipo de agente
+  specificData: z.record(z.any()).optional()
+}).optional();
+
 export const agentResultSchema = z.object({
   decision: z.enum(["PROSSEGUIR", "NAO_PROSSEGUIR"]),
   score: z.number().min(0).max(100),
   analysis: z.string(),
+  concreteData: concreteDataSchema,
 });
 
 export const workflowResultSchema = z.object({

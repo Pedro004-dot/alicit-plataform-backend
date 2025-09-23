@@ -3,6 +3,7 @@ import relatoriosTecnicosRepository, {
     CreateRelatorioInput 
 } from '../../repositories/relatoriosTecnicosRepository';
 import licitacaoEmpresaRepository from '../../repositories/licitacaoEmpresaRepository';
+import { RelatorioProcessorService } from './relatorioProcessorService';
 import * as fs from 'fs';
 
 export enum TipoRelatorio {
@@ -33,6 +34,11 @@ export interface RelatorioArmazenado {
 }
 
 export class RelatorioStorageService {
+  private relatorioProcessor: RelatorioProcessorService;
+
+  constructor() {
+    this.relatorioProcessor = new RelatorioProcessorService();
+  }
 
   async salvarRelatorio(
     empresaCNPJ: string,
@@ -40,9 +46,22 @@ export class RelatorioStorageService {
     pdfPath: string,
     tipo: TipoRelatorio = TipoRelatorio.ANALISE_COMPLETA,
     metadados: RelatorioMetadados,
-    dadosPdf?: any
+    dadosPdf?: any,
+    markdownContent?: string
   ): Promise<RelatorioTecnico> {
     console.log(`💾 Salvando relatório ${tipo} para empresa ${empresaCNPJ} - licitação ${numeroControlePNCP}`);
+    
+    // 🚀 NOVO: Processar dados estruturados se markdownContent for fornecido
+    if (markdownContent) {
+      try {
+        console.log(`📊 Processando dados estruturados para ${numeroControlePNCP}`);
+        await this.relatorioProcessor.processarRelatorio(markdownContent, numeroControlePNCP, empresaCNPJ);
+        console.log(`✅ Dados estruturados salvos com sucesso`);
+      } catch (error) {
+        console.error(`❌ Erro ao processar dados estruturados:`, error);
+        // Não bloqueia o salvamento do PDF se processar estruturado falhar
+      }
+    }
     
     const licitacaoEmpresa = await this.buscarLicitacaoEmpresa(empresaCNPJ, numeroControlePNCP);
     
