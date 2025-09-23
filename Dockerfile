@@ -2,6 +2,20 @@
 # Node 20 é requerido pelo Mastra framework
 FROM node:20-alpine
 
+# Instalar Chrome e dependências para Puppeteer
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Configurar Puppeteer para usar Chrome do sistema
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Definir diretório de trabalho no container
 WORKDIR /app
 
