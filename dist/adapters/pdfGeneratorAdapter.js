@@ -32,11 +32,15 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PDFGeneratorAdapter = void 0;
-const puppeteer = __importStar(require("puppeteer"));
+const puppeteer = __importStar(require("puppeteer-core"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const chromium_1 = __importDefault(require("@sparticuz/chromium"));
 const markdownParser_1 = require("../utils/markdownParser");
 class PDFGeneratorAdapter {
     constructor() {
@@ -48,6 +52,70 @@ class PDFGeneratorAdapter {
             fs.mkdirSync(this.outputDir, { recursive: true });
         }
     }
+    async launchBrowser() {
+        const isProduction = process.env.NODE_ENV === 'production';
+        const isLambda = process.env.AWS_LAMBDA_FUNCTION_NAME;
+        if (isProduction || isLambda) {
+            console.log('🚀 Launching browser in production/serverless mode');
+            // Produção/Serverless - usar @sparticuz/chromium
+            return await puppeteer.launch({
+                args: [
+                    ...chromium_1.default.args,
+                    '--hide-scrollbars',
+                    '--disable-web-security',
+                    '--disable-features=VizDisplayCompositor',
+                ],
+                executablePath: await chromium_1.default.executablePath(),
+                headless: true,
+                ignoreDefaultArgs: ['--disable-extensions'],
+            });
+        }
+        else {
+            console.log('💻 Launching browser in development mode');
+            // Desenvolvimento local - tentar usar Chrome instalado
+            const possiblePaths = [
+                '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // macOS
+                '/usr/bin/google-chrome', // Linux
+                '/usr/bin/chromium-browser', // Linux alternative
+                'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', // Windows
+                'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe', // Windows 32-bit
+            ];
+            let executablePath = '';
+            for (const path of possiblePaths) {
+                if (fs.existsSync(path)) {
+                    executablePath = path;
+                    break;
+                }
+            }
+            if (!executablePath) {
+                console.log('⚠️ Chrome não encontrado localmente, usando chromium sparticuz');
+                // Fallback para chromium se Chrome não encontrado
+                return await puppeteer.launch({
+                    args: [
+                        ...chromium_1.default.args,
+                        '--hide-scrollbars',
+                        '--disable-web-security',
+                    ],
+                    executablePath: await chromium_1.default.executablePath(),
+                    headless: true,
+                    ignoreDefaultArgs: ['--disable-extensions'],
+                });
+            }
+            console.log(`✅ Usando Chrome encontrado em: ${executablePath}`);
+            return await puppeteer.launch({
+                headless: true,
+                executablePath,
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--disable-gpu'
+                ]
+            });
+        }
+    }
     async generateReport(data) {
         try {
             const htmlContent = await this.generateHTML(data);
@@ -55,10 +123,7 @@ class PDFGeneratorAdapter {
             const filename = `relatorio_${sanitizedLicitacaoId}_${Date.now()}.pdf`;
             const outputPath = path.join(this.outputDir, filename);
             const dadosPdf = this.extractPdfData(data);
-            const browser = await puppeteer.launch({
-                headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
-            });
+            const browser = await this.launchBrowser();
             const page = await browser.newPage();
             await page.setContent(htmlContent, {
                 waitUntil: 'networkidle0'

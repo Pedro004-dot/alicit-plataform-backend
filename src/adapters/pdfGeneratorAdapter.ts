@@ -1,6 +1,7 @@
-import * as puppeteer from 'puppeteer';
+import * as puppeteer from 'puppeteer-core';
 import * as fs from 'fs';
 import * as path from 'path';
+import chromium from '@sparticuz/chromium';
 import { MarkdownParser, DadosRelatorioFrontend } from '../utils/markdownParser';
 
 export interface PDFReportData {
@@ -28,6 +29,74 @@ export class PDFGeneratorAdapter {
     }
   }
 
+  private async launchBrowser(): Promise<puppeteer.Browser> {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isLambda = process.env.AWS_LAMBDA_FUNCTION_NAME;
+    
+    if (isProduction || isLambda) {
+      console.log('🚀 Launching browser in production/serverless mode');
+      // Produção/Serverless - usar @sparticuz/chromium
+      return await puppeteer.launch({
+        args: [
+          ...chromium.args,
+          '--hide-scrollbars',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+        ],
+        executablePath: await chromium.executablePath(),
+        headless: true,
+        ignoreDefaultArgs: ['--disable-extensions'],
+      });
+    } else {
+      console.log('💻 Launching browser in development mode');
+      // Desenvolvimento local - tentar usar Chrome instalado
+      const possiblePaths = [
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // macOS
+        '/usr/bin/google-chrome', // Linux
+        '/usr/bin/chromium-browser', // Linux alternative
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', // Windows
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe', // Windows 32-bit
+      ];
+
+      let executablePath = '';
+      for (const path of possiblePaths) {
+        if (fs.existsSync(path)) {
+          executablePath = path;
+          break;
+        }
+      }
+
+      if (!executablePath) {
+        console.log('⚠️ Chrome não encontrado localmente, usando chromium sparticuz');
+        // Fallback para chromium se Chrome não encontrado
+        return await puppeteer.launch({
+          args: [
+            ...chromium.args,
+            '--hide-scrollbars',
+            '--disable-web-security',
+          ],
+          executablePath: await chromium.executablePath(),
+          headless: true,
+          ignoreDefaultArgs: ['--disable-extensions'],
+        });
+      }
+
+      console.log(`✅ Usando Chrome encontrado em: ${executablePath}`);
+      return await puppeteer.launch({
+        headless: true,
+        executablePath,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--disable-gpu'
+        ]
+      });
+    }
+  }
+
   async generateReport(data: PDFReportData): Promise<{ pdfPath: string; dadosPdf: any }> {
     try {
       const htmlContent = await this.generateHTML(data);
@@ -37,20 +106,7 @@ export class PDFGeneratorAdapter {
 
       const dadosPdf = this.extractPdfData(data);
 
-      const browser = await puppeteer.launch({
-        headless: true,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu'
-        ]
-      });
+      const browser = await this.launchBrowser();
 
       const page = await browser.newPage();
       
