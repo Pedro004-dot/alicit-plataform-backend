@@ -2,8 +2,7 @@
 # Node 20 é requerido pelo Mastra framework
 FROM node:20-alpine
 
-# Configurações para @sparticuz/chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# Configuração para API externa de PDF
 
 # Definir diretório de trabalho no container
 WORKDIR /app

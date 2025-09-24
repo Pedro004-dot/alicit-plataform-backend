@@ -21,6 +21,7 @@ const PORT = parseInt(process.env.PORT || '3002', 10);
 // Configuração CORS para suportar múltiplos ambientes
 const allowedOrigins = [
   'http://localhost:3000',
+  'http://localhost:3001',
   'https://alicitplataform.vercel.app',
   process.env.CORS_ORIGIN
 ].filter(Boolean);

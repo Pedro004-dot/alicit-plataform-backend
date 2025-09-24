@@ -15,7 +15,8 @@
     "test-edital-analysis": "ts-node src/scripts/testEditalAnalysis.ts",
     "test-direct-agents": "ts-node src/scripts/testDirectAgents.ts",
     "test-workflow": "ts-node src/scripts/testEditalWorkflow.ts",
-    "test-analysis-route": "ts-node src/scripts/testAnalysisRoute.ts"
+    "test-analysis-route": "ts-node src/scripts/testAnalysisRoute.ts",
+    "test-pdfshift": "ts-node src/scripts/testPDFShift.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.24",
@@ -26,13 +27,11 @@
     "@mastra/pinecone": "^0.11.8",
     "@mastra/rag": "^1.2.4",
     "@pinecone-database/pinecone": "^6.1.2",
-    "@sparticuz/chromium": "^138.0.2",
     "@supabase/supabase-js": "^2.56.0",
     "@types/cors": "^2.8.19",
     "@types/multer": "^2.0.0",
     "@types/node-cron": "^3.0.11",
     "@types/pdf-parse": "^1.1.1",
-    "@types/puppeteer": "^5.4.7",
     "@types/yauzl": "^2.10.3",
     "ai": "latest",
     "axios": "^1.11.0",
@@ -46,7 +45,6 @@
     "openai": "^5.20.1",
     "pdf-parse": "^1.1.1",
     "pdf2json": "^3.2.0",
-    "puppeteer-core": "^24.22.2",
     "redis": "^5.8.1",
     "yauzl": "^3.2.0",
     "zod": "^3.25.67"
