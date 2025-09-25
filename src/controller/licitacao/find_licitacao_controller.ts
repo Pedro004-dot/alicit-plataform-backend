@@ -6,6 +6,8 @@ interface FindRequest {
   palavraChave: string;
   valorMinimo?: number;
   valorMaximo?: number;
+  valorMinimoUnitario?: number;
+  valorMaximoUnitario?: number;
   tipoLicitacao?: string;
   dataInicio?: string;
   dataFim?: string;

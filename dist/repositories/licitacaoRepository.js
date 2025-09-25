@@ -13,6 +13,86 @@ class LicitacaoRepository {
         }
         return data;
     }
+    async getLicitacaoByNumeroControlePNCP(numeroControlePNCP) {
+        // Tentar busca exata primeiro com join dos itens
+        let { data, error } = await supabase_1.supabase
+            .from('licitacoes')
+            .select(`
+        *,
+        licitacao_itens(
+          id,
+          numero_item,
+          descricao,
+          material_ou_servico,
+          material_ou_servico_nome,
+          item_categoria_id,
+          item_categoria_nome,
+          valor_unitario_estimado,
+          valor_total,
+          quantidade,
+          unidade_medida,
+          orcamento_sigiloso,
+          incentivo_produtivo_basico,
+          exigencia_conteudo_nacional,
+          criterio_julgamento_id,
+          criterio_julgamento_nome,
+          situacao_compra_item,
+          situacao_compra_item_nome,
+          tipo_beneficio,
+          tipo_beneficio_nome,
+          ncm_nbs_codigo,
+          ncm_nbs_descricao,
+          data_inclusao,
+          data_atualizacao,
+          tem_resultado
+        )
+      `)
+            .eq('numero_controle_pncp', numeroControlePNCP)
+            .single();
+        // Se não encontrar, tentar busca com LIKE para variações
+        if (!data) {
+            const { data: dataLike, error: errorLike } = await supabase_1.supabase
+                .from('licitacoes')
+                .select(`
+          *,
+          licitacao_itens(
+            id,
+            numero_item,
+            descricao,
+            material_ou_servico,
+            material_ou_servico_nome,
+            item_categoria_id,
+            item_categoria_nome,
+            valor_unitario_estimado,
+            valor_total,
+            quantidade,
+            unidade_medida,
+            orcamento_sigiloso,
+            incentivo_produtivo_basico,
+            exigencia_conteudo_nacional,
+            criterio_julgamento_id,
+            criterio_julgamento_nome,
+            situacao_compra_item,
+            situacao_compra_item_nome,
+            tipo_beneficio,
+            tipo_beneficio_nome,
+            ncm_nbs_codigo,
+            ncm_nbs_descricao,
+            data_inclusao,
+            data_atualizacao,
+            tem_resultado
+          )
+        `)
+                .ilike('numero_controle_pncp', `%${numeroControlePNCP}%`)
+                .single();
+            data = dataLike;
+            error = errorLike;
+        }
+        if (error && error.code !== 'PGRST116') {
+            throw new Error(`Erro ao buscar licitação: ${error.message}`);
+        }
+        return data;
+    }
     // Operações de documentos
     async uploadDocumentoToStorage(numeroControlePNCP, filename, buffer, mimetype) {
         // Sanitizar nome do arquivo para compatibilidade com Supabase Storage

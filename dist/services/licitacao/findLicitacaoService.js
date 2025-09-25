@@ -25,7 +25,9 @@ const findWithKeywordAndFilters = async (findRequest) => {
             termosInteresse: [findRequest.palavraChave],
             valorMinimo: findRequest.valorMinimo,
             valorMaximo: findRequest.valorMaximo,
-            raioDistancia: findRequest.raioDistancia,
+            valorMinimoUnitario: findRequest.valorMinimoUnitario,
+            valorMaximoUnitario: findRequest.valorMaximoUnitario,
+            raioRadar: findRequest.raioDistancia,
             cidadeRadar: findRequest.cidade_radar,
         };
         // Aplicar filtros usando função existente

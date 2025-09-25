@@ -37,10 +37,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PDFGeneratorAdapter = void 0;
-const puppeteer = __importStar(require("puppeteer-core"));
+const axios_1 = __importDefault(require("axios"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
-const chromium_1 = __importDefault(require("@sparticuz/chromium"));
 const markdownParser_1 = require("../utils/markdownParser");
 class PDFGeneratorAdapter {
     constructor() {
@@ -52,84 +51,15 @@ class PDFGeneratorAdapter {
             fs.mkdirSync(this.outputDir, { recursive: true });
         }
     }
-    async launchBrowser() {
-        const isProduction = process.env.NODE_ENV === 'production';
-        const isLambda = process.env.AWS_LAMBDA_FUNCTION_NAME;
-        if (isProduction || isLambda) {
-            console.log('🚀 Launching browser in production/serverless mode');
-            // Produção/Serverless - usar @sparticuz/chromium
-            return await puppeteer.launch({
-                args: [
-                    ...chromium_1.default.args,
-                    '--hide-scrollbars',
-                    '--disable-web-security',
-                    '--disable-features=VizDisplayCompositor',
-                ],
-                executablePath: await chromium_1.default.executablePath(),
-                headless: true,
-                ignoreDefaultArgs: ['--disable-extensions'],
-            });
+    async generatePDFWithAPI(htmlContent, filename) {
+        const API_KEY = process.env.PDFSHIFT_API_KEY;
+        if (!API_KEY) {
+            throw new Error('PDFSHIFT_API_KEY não configurada. Configure a variável de ambiente.');
         }
-        else {
-            console.log('💻 Launching browser in development mode');
-            // Desenvolvimento local - tentar usar Chrome instalado
-            const possiblePaths = [
-                '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // macOS
-                '/usr/bin/google-chrome', // Linux
-                '/usr/bin/chromium-browser', // Linux alternative
-                'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', // Windows
-                'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe', // Windows 32-bit
-            ];
-            let executablePath = '';
-            for (const path of possiblePaths) {
-                if (fs.existsSync(path)) {
-                    executablePath = path;
-                    break;
-                }
-            }
-            if (!executablePath) {
-                console.log('⚠️ Chrome não encontrado localmente, usando chromium sparticuz');
-                // Fallback para chromium se Chrome não encontrado
-                return await puppeteer.launch({
-                    args: [
-                        ...chromium_1.default.args,
-                        '--hide-scrollbars',
-                        '--disable-web-security',
-                    ],
-                    executablePath: await chromium_1.default.executablePath(),
-                    headless: true,
-                    ignoreDefaultArgs: ['--disable-extensions'],
-                });
-            }
-            console.log(`✅ Usando Chrome encontrado em: ${executablePath}`);
-            return await puppeteer.launch({
-                headless: true,
-                executablePath,
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--no-first-run',
-                    '--disable-gpu'
-                ]
-            });
-        }
-    }
-    async generateReport(data) {
         try {
-            const htmlContent = await this.generateHTML(data);
-            const sanitizedLicitacaoId = data.licitacaoId.replace(/[\/\\:*?"<>|]/g, '-');
-            const filename = `relatorio_${sanitizedLicitacaoId}_${Date.now()}.pdf`;
-            const outputPath = path.join(this.outputDir, filename);
-            const dadosPdf = this.extractPdfData(data);
-            const browser = await this.launchBrowser();
-            const page = await browser.newPage();
-            await page.setContent(htmlContent, {
-                waitUntil: 'networkidle0'
-            });
-            await page.pdf({
-                path: outputPath,
+            console.log('🌐 Gerando PDF via PDFShift API');
+            const response = await axios_1.default.post('https://api.pdfshift.io/v3/convert/pdf', {
+                source: htmlContent,
                 format: 'A4',
                 margin: {
                     top: '20mm',
@@ -137,23 +67,48 @@ class PDFGeneratorAdapter {
                     bottom: '20mm',
                     left: '15mm'
                 },
-                printBackground: true,
-                displayHeaderFooter: true,
-                headerTemplate: `
-          <div style="font-size: 10px; width: 100%; text-align: center; color: #666; padding: 10px;">
-            <div style="color: #ff6b35; font-weight: bold;">ALICIT</div>
-            <div>Relatório de Análise de Edital - ${data.licitacaoId}</div>
-          </div>
-        `,
-                footerTemplate: `
-          <div style="font-size: 10px; width: 100%; text-align: center; color: #666; padding: 10px;">
-            Página <span class="pageNumber"></span> de <span class="totalPages"></span> | 
-            Gerado em ${new Date().toLocaleString('pt-BR')} | 
-            <span style="color: #ff6b35; font-weight: bold;">ALICIT</span>
-          </div>
-        `
+                landscape: false,
+                use_print: true,
+                disable_backgrounds: false
+            }, {
+                headers: {
+                    'Authorization': `Basic ${Buffer.from(`api:${API_KEY}`).toString('base64')}`,
+                    'Content-Type': 'application/json'
+                },
+                responseType: 'arraybuffer'
             });
-            await browser.close();
+            const outputPath = path.join(this.outputDir, filename);
+            fs.writeFileSync(outputPath, response.data);
+            console.log(`✅ PDF gerado via API: ${outputPath}`);
+            return outputPath;
+        }
+        catch (error) {
+            // Converter buffer para string legível se necessário
+            let errorMessage = error.message;
+            if (error.response?.data && Buffer.isBuffer(error.response.data)) {
+                try {
+                    const errorText = error.response.data.toString('utf-8');
+                    console.error('❌ Erro detalhado da PDFShift API:', errorText);
+                    errorMessage = `API Error: ${errorText}`;
+                }
+                catch (parseError) {
+                    console.error('❌ Erro na PDFShift API (buffer não parseável):', error.response.data);
+                }
+            }
+            else {
+                console.error('❌ Erro na PDFShift API:', error.response?.data || error.message);
+            }
+            throw new Error(`Falha na API externa: ${errorMessage}`);
+        }
+    }
+    async generateReport(data) {
+        try {
+            const htmlContent = await this.generateHTML(data);
+            const sanitizedLicitacaoId = data.licitacaoId.replace(/[\/\\:*?"<>|]/g, '-');
+            const filename = `relatorio_${sanitizedLicitacaoId}_${Date.now()}.pdf`;
+            const dadosPdf = this.extractPdfData(data);
+            // Usar API externa PDFShift
+            const outputPath = await this.generatePDFWithAPI(htmlContent, filename);
             console.log(`✅ PDF gerado: ${outputPath}`);
             return { pdfPath: outputPath, dadosPdf };
         }

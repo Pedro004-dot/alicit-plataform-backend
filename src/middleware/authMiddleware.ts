@@ -22,8 +22,8 @@ declare global {
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
 
-  console.log('🔍 AuthMiddleware - Token recebido:', token ? 'Sim' : 'Não');
-  console.log('🔍 AuthMiddleware - JWT_SECRET configurado:', process.env.JWT_SECRET ? 'Sim' : 'Não');
+  // console.log('🔍 AuthMiddleware - Token recebido:', token ? 'Sim' : 'Não');
+  // console.log('🔍 AuthMiddleware - JWT_SECRET configurado:', process.env.JWT_SECRET ? 'Sim' : 'Não');
 
   if (!token) {
     console.log('❌ Token não fornecido');
@@ -32,7 +32,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as UserPayload;
-    console.log('✅ Token decodificado:', decoded);
+    // console.log('✅ Token decodificado:', decoded);
     req.user = decoded;
     next();
   } catch (error) {

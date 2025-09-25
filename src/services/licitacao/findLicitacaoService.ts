@@ -8,6 +8,8 @@ interface FindRequest {
   palavraChave: string;
   valorMinimo?: number;
   valorMaximo?: number;
+  valorMinimoUnitario?: number;
+  valorMaximoUnitario?: number;
   tipoLicitacao?: string;
   dataInicio?: string;
   dataFim?: string;
@@ -42,7 +44,9 @@ const findWithKeywordAndFilters = async (findRequest: FindRequest): Promise<PNCP
       termosInteresse: [findRequest.palavraChave],
       valorMinimo: findRequest.valorMinimo,
       valorMaximo: findRequest.valorMaximo,
-      raioDistancia: findRequest.raioDistancia,
+      valorMinimoUnitario: findRequest.valorMinimoUnitario,
+      valorMaximoUnitario: findRequest.valorMaximoUnitario,
+      raioRadar: findRequest.raioDistancia,
       cidadeRadar: findRequest.cidade_radar,
     };
     

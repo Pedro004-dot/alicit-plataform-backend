@@ -6,6 +6,7 @@ import licitacaoEmpresaController from '../controller/licitacao/statusLicitacaoE
 import recomendacaoController from '../controller/licitacao/recomendacaoController';
 import dashboardController from '../controller/licitacao/dashboardController';
 import pineconeDiagnosticController from '../controller/licitacao/pineconeDiagnosticController';
+import getUniqueLicitacaoController from '../controller/licitacao/getUniqueLicitacaoController';
 
 const router = Router();    
 // busca novas licitacoes 
@@ -14,6 +15,8 @@ router.post('/search', licitacaoController.searchLicitacao);
 router.post('/find', findLicitacaoController.findLicitacao);
 //cruzza as licitacoes com a empresa
 router.post('/matching', matchingLicitacaoController.calculateMatching);
+
+router.get('/getUniqueLicitacao', getUniqueLicitacaoController.getUniqueLicitacao);
 // diagnostico do Pinecone
 router.get('/pinecone/stats', pineconeDiagnosticController.obterEstatisticasPinecone);
 router.get('/pinecone/estado/:uf', pineconeDiagnosticController.obterLicitacoesPorEstado);
