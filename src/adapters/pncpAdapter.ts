@@ -1,3 +1,5 @@
+import { ILicitacaoAdapter, SearchParams, LicitacaoStandard } from './interfaces/ILicitacaoAdapter';
+
 interface PNCPSearchParams {
   dataFim?: string;
   dataFinal?: string;
@@ -167,7 +169,26 @@ const fetchPaginaUnica = async (baseUrl: string, dataFinal: string, pagina: numb
   }
 };
 
-const buscarLicitacoesPNCP = async (params: PNCPSearchParams, maxPaginas: number = 100): Promise<PNCPLicitacao[]> => {
+class PNCPAdapter implements ILicitacaoAdapter {
+  getNomeFonte(): string {
+    return 'pncp';
+  }
+
+  async buscarLicitacoes(params: SearchParams): Promise<LicitacaoStandard[]> {
+    const pncpParams: PNCPSearchParams = {
+      dataFinal: params.dataFim?.replace(/-/g, ''),
+      pagina: params.pagina
+    };
+    // 30000 é o limite de licitações 
+    const resultado = await this.buscarLicitacoesPNCP(pncpParams, 30000);
+    return resultado.map(this.converterParaPadrao);
+  }
+  
+  private converterParaPadrao(licitacao: PNCPLicitacao): LicitacaoStandard {
+    return licitacao as LicitacaoStandard;
+  }
+
+  private async buscarLicitacoesPNCP(params: PNCPSearchParams, maxPaginas: number = 100): Promise<PNCPLicitacao[]> {
   const baseUrl = 'https://pncp.gov.br/api/consulta/v1/contratacoes/proposta';
   const dataFinal = params.dataFinal || new Date().toISOString().split('T')[0].replace(/-/g, '');
   const todasLicitacoes: PNCPLicitacao[] = [];
@@ -181,7 +202,7 @@ const buscarLicitacoesPNCP = async (params: PNCPSearchParams, maxPaginas: number
   console.log(`🚀 Iniciando busca paralela: data=${dataFinal}, maxPaginas=${maxPaginas}, batchSize=${batchSize}`);
   
   try {
-    while (todasLicitacoes.length < 30000) {
+    while (todasLicitacoes.length < 10) {
       const paginasParaBuscar = [];
       for (let i = 0; i < batchSize && paginaAtual + i <= totalPaginas; i++) {
         if (paginasProcessadas + i < maxPaginas) {
@@ -276,9 +297,9 @@ const buscarLicitacoesPNCP = async (params: PNCPSearchParams, maxPaginas: number
     console.log(` Retornando ${todasLicitacoes.length} licitações coletadas antes do erro`);
     return todasLicitacoes;
   }
-};
+  }
 
-const downloadLicitacaoPNCP = async (params: licitacaoData): Promise<string[]> => {
+  async downloadLicitacaoPNCP(params: licitacaoData): Promise<string[]> {
   const url = `https://pncp.gov.br/api/pncp/v1/orgaos/${params.cnpj}/compras/${params.ano}/${params.sequencial}/arquivos`;
   const response = await fetch(url);
   const data = await response.json();
@@ -289,6 +310,23 @@ const downloadLicitacaoPNCP = async (params: licitacaoData): Promise<string[]> =
   }
   console.log(`Total documents: ${i}`);
   return documentsUrl;
+  }
+}
+
+const buscarLicitacoesPNCP = async (params: PNCPSearchParams, maxPaginas: number = 100): Promise<PNCPLicitacao[]> => {
+  const adapter = new PNCPAdapter();
+  const searchParams: SearchParams = {
+    dataFim: params.dataFinal?.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3'),
+    pagina: params.pagina
+  };
+  const resultado = await adapter.buscarLicitacoes(searchParams);
+  return resultado as PNCPLicitacao[];
 };
 
-export default { buscarLicitacoesPNCP, downloadLicitacaoPNCP };
+const downloadLicitacaoPNCP = async (params: licitacaoData): Promise<string[]> => {
+  const adapter = new PNCPAdapter();
+  return await adapter.downloadLicitacaoPNCP(params);
+};
+
+export default PNCPAdapter;
+export { buscarLicitacoesPNCP, downloadLicitacaoPNCP };

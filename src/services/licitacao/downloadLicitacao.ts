@@ -101,7 +101,8 @@ const downloadLicitacaoPNCP = async (pncpId: DownloadLicitacaoInput): Promise<Pr
     console.log(`📋 Licitação encontrada: ${licitacao.numeroControlePNCP}, ano ${licitacao.anoCompra}, sequencial ${licitacao.sequencialCompra}`);
     
     // 2. Buscar URLs dos documentos via adapter PNCP
-    const documentUrls = await pncpAdapter.downloadLicitacaoPNCP({
+    const adapter = new pncpAdapter();
+    const documentUrls = await adapter.downloadLicitacaoPNCP({
         ano: licitacao.anoCompra || 0,
         sequencial: licitacao.sequencialCompra || 0,
         cnpj: licitacao.orgaoEntidade.cnpj || ''

@@ -13,6 +13,7 @@ const router = Router();
 router.post('/search', licitacaoController.searchLicitacao);
 // busca licitacoes  no banco de dados
 router.post('/find', findLicitacaoController.findLicitacao);
+
 //cruzza as licitacoes com a empresa
 router.post('/matching', matchingLicitacaoController.calculateMatching);
 
