@@ -130,21 +130,48 @@ export class HistoricalLicitacaoMigrator {
   }
 
   private async filterExistingInPinecone(licitacoes: any[]): Promise<any[]> {
-    const novas = [];
+    console.log(`🔍 Verificando duplicatas para ${licitacoes.length} licitações...`);
     
-    // Verificar em batches de 50
-    for (let i = 0; i < licitacoes.length; i += 50) {
-      const batch = licitacoes.slice(i, i + 50);
+    // Usar o método já testado do repository - mas de forma direta
+    const { Pinecone } = await import('@pinecone-database/pinecone');
+    const pinecone = new Pinecone({
+      apiKey: process.env.PINECONE_API_KEY!,
+    });
+    const index = pinecone.index('alicit-editais');
+    
+    const existingIds: string[] = [];
+    const BATCH_SIZE = 100;
+    
+    // Verificar em batches quais já existem (mesmo método do repository)
+    for (let i = 0; i < licitacoes.length; i += BATCH_SIZE) {
+      const batch = licitacoes.slice(i, i + BATCH_SIZE);
+      const ids = batch.map(l => `licitacao:${l.numeroControlePNCP}`);
       
-      for (const licitacao of batch) {
-        const exists = await pineconeLicitacaoRepository.getLicitacao(licitacao.numeroControlePNCP);
-        if (!exists) {
-          novas.push(licitacao);
+      try {
+        const fetchResponse = await index.fetch(ids);
+        const existingInBatch = Object.keys(fetchResponse.records || {});
+        existingIds.push(...existingInBatch);
+        
+        // Log detalhado para debugging
+        if (existingInBatch.length > 0) {
+          console.log(`📦 Batch ${Math.floor(i/BATCH_SIZE) + 1}: ${existingInBatch.length}/${batch.length} já existem`);
+          existingInBatch.forEach(id => {
+            const numeroControle = id.replace('licitacao:', '');
+            console.log(`⏭️ Já existe: ${numeroControle}`);
+          });
         }
+      } catch (error) {
+        console.warn('⚠️ Erro ao verificar duplicatas, continuando...', error);
       }
-      
-      await this.sleep(100); // Pausa entre verificações
     }
+    
+    // Filtrar apenas as não existentes
+    const novas = licitacoes.filter(l => !existingIds.includes(`licitacao:${l.numeroControlePNCP}`));
+    
+    // Log das novas
+    novas.forEach(licitacao => {
+      console.log(`🆕 Nova licitação: ${licitacao.numeroControlePNCP}`);
+    });
     
     return novas;
   }
@@ -172,7 +199,18 @@ export class HistoricalLicitacaoMigrator {
         }
       });
       
-      return response.ok ? await response.json() : null;
+      if (!response.ok) {
+        console.warn(`⚠️ HTTP ${response.status} - modalidade ${modalidade}, página ${pagina}`);
+        return null;
+      }
+
+      const text = await response.text();
+      if (!text.trim()) {
+        console.warn(`⚠️ Resposta vazia - modalidade ${modalidade}, página ${pagina}`);
+        return null;
+      }
+
+      return JSON.parse(text);
     } catch (error) {
       console.warn(`⚠️ Erro página ${pagina} modalidade ${modalidade}:`, error);
       return null;
