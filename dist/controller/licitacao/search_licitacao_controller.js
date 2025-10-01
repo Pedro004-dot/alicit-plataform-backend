@@ -6,7 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const searchLicitacaoService_1 = __importDefault(require("../../services/licitacao/searchLicitacaoService"));
 const searchLicitacao = async (req, res) => {
     try {
-        const search = await searchLicitacaoService_1.default.searchLicitacao({ dataFim: req.body.dataFim });
+        const { dataFim, fonte, dataInicio } = req.body;
+        const search = await searchLicitacaoService_1.default.searchLicitacao({
+            dataInicio,
+            dataFim,
+            fonte // opcional: especifica fonte (pncp, etc.) ou usa padrão
+        });
         res.status(201).json(search);
         return search;
     }

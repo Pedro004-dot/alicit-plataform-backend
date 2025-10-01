@@ -7,12 +7,16 @@ import recomendacaoController from '../controller/licitacao/recomendacaoControll
 import dashboardController from '../controller/licitacao/dashboardController';
 import pineconeDiagnosticController from '../controller/licitacao/pineconeDiagnosticController';
 import getUniqueLicitacaoController from '../controller/licitacao/getUniqueLicitacaoController';
+import migrateHistoricalController from '../controller/licitacao/migrateHistoricalController';
 
 const router = Router();    
 // busca novas licitacoes 
 router.post('/search', licitacaoController.searchLicitacao);
 // busca licitacoes  no banco de dados
 router.post('/find', findLicitacaoController.findLicitacao);
+
+// migração histórica (executa em background)
+router.post('/migrate-historical', migrateHistoricalController.migrateHistorical);
 
 //cruzza as licitacoes com a empresa
 router.post('/matching', matchingLicitacaoController.calculateMatching);

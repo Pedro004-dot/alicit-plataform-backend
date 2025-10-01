@@ -3,9 +3,10 @@ import searchLicitacaoService from "../../services/licitacao/searchLicitacaoServ
 
 const searchLicitacao = async (req: Request, res: Response) => {
   try {
-    const { dataFim, fonte } = req.body;
+    const { dataFim, fonte, dataInicio } = req.body;
     
     const search = await searchLicitacaoService.searchLicitacao({
+      dataInicio,
       dataFim,
       fonte // opcional: especifica fonte (pncp, etc.) ou usa padrão
     });

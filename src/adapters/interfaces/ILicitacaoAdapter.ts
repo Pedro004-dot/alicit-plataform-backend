@@ -1,4 +1,5 @@
 interface SearchParams {
+  dataInicio?: string;
   dataFim?: string;
   fonte?: string;
   pagina?: number;

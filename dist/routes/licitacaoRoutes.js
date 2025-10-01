@@ -12,11 +12,14 @@ const recomendacaoController_1 = __importDefault(require("../controller/licitaca
 const dashboardController_1 = __importDefault(require("../controller/licitacao/dashboardController"));
 const pineconeDiagnosticController_1 = __importDefault(require("../controller/licitacao/pineconeDiagnosticController"));
 const getUniqueLicitacaoController_1 = __importDefault(require("../controller/licitacao/getUniqueLicitacaoController"));
+const migrateHistoricalController_1 = __importDefault(require("../controller/licitacao/migrateHistoricalController"));
 const router = (0, express_1.Router)();
 // busca novas licitacoes 
 router.post('/search', search_licitacao_controller_1.default.searchLicitacao);
 // busca licitacoes  no banco de dados
 router.post('/find', find_licitacao_controller_1.default.findLicitacao);
+// migração histórica (executa em background)
+router.post('/migrate-historical', migrateHistoricalController_1.default.migrateHistorical);
 //cruzza as licitacoes com a empresa
 router.post('/matching', matching_licitacao_controller_1.default.calculateMatching);
 router.get('/getUniqueLicitacao', getUniqueLicitacaoController_1.default.getUniqueLicitacao);
