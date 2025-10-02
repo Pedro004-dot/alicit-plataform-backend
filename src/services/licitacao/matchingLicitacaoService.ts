@@ -2,127 +2,137 @@ import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAI } from 'openai';
 import { EmpresaPerfil, PNCPLicitacao, MatchResult, MatchDetails } from './metrics/types';
 import { aplicarFiltrosAtivos } from './filters/filterEngine';
+import supabaseLicitacaoRepository from '../../repositories/supabaseLicitacaoRepository';
 
 const calculateMatching = async (empresaPerfil: EmpresaPerfil): Promise<MatchResult[]> => {
   try {
-    console.log('🚀 Iniciando matching otimizado via Pinecone...');
+    console.log('🚀 Iniciando matching híbrido (Pinecone + Supabase)...');
     
-    // 1. Gerar embedding da empresa
-    const empresaEmbedding = await generateEmpresaEmbedding(empresaPerfil);
+    // 1. BUSCA SEMÂNTICA NO PINECONE - apenas IDs + scores
+    const pineconeResults = await searchSemantic(empresaPerfil);
     
-    // 2. Construir filtros mínimos do Pinecone (apenas licitações vs editais)
-    const filters = buildPineconeFilters();
-    
-    // 3. Busca vetorial otimizada - apenas top candidatos
-    const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
-    const index = pinecone.index('alicit-editais');
-    
-    const searchResults = await index.query({
-      vector: empresaEmbedding,
-      topK: 500,
-      includeValues: false,
-      includeMetadata: true,
-      filter: filters
-    });
-    
-
-    console.log(`🎯 ${searchResults.matches?.length || 0} candidatos encontrados via busca vetorial`);
-    
-    if (!searchResults.matches?.length) {
-      console.log('❌ Nenhuma licitação encontrada com os filtros aplicados');
+    if (!pineconeResults.length) {
+      console.log('❌ Nenhuma licitação encontrada na busca semântica');
       return [];
     }
-
-    // 4. Processar resultados do Pinecone - filtrar apenas licitações
-    const candidates = searchResults.matches
-      .filter(match => {
-        // Garantir que é uma licitação com dados válidos
-        const isLicitacao = match.id?.startsWith('licitacao:');
-        const hasData = !!match.metadata?.data;
-        
-        if (!isLicitacao || !hasData) {
-          console.log(`⚠️ Removendo item inválido: ${match.id} (isLicitacao: ${isLicitacao}, hasData: ${hasData})`);
-          return false;
-        }
-        return true;
-      })
-      .map(match => {
-        try {
-          return {
-            licitacao: JSON.parse(match.metadata?.data as string),
-            pineconeScore: match.score || 0,
-            metadata: match.metadata
-          };
-        } catch (error) {
-          console.warn(`⚠️ Erro ao parsear licitação ${match.id}:`, error);
-          return null;
-        }
-      })
-      .filter(candidate => candidate !== null);
-
-
-
-    // 5. CONVERTER para licitações simples para o filterEngine
-    const licitacoesParaFiltro = candidates.map(candidate => candidate.licitacao);
-    console.log(`📊 ${licitacoesParaFiltro.length} licitações semânticas encontradas, aplicando filtros precisos...`);
-
     
-    // 6. APLICAR FILTROS PRECISOS usando filterEngine.ts
-    const resultadoFiltros = await aplicarFiltrosAtivos(licitacoesParaFiltro, empresaPerfil);
+    console.log(`🎯 ${pineconeResults.length} candidatos semânticos encontrados`);
+    
+    // 2. BUSCAR DADOS COMPLETOS NO SUPABASE
+    const numeroControlePNCPs = pineconeResults.map(r => r.numeroControlePNCP);
+    const licitacoesCompletas = await supabaseLicitacaoRepository.getLicitacoesByIds(numeroControlePNCPs);
+    
+    console.log(`📊 ${licitacoesCompletas.length} licitações completas recuperadas do Supabase`);
+    
+    if (!licitacoesCompletas.length) {
+      console.log('⚠️ Nenhuma licitação encontrada no Supabase com os IDs do Pinecone');
+      return [];
+    }
+    
+    // 3. APLICAR FILTROS PRECISOS (geográfico, valor, etc.)
+    const resultadoFiltros = await aplicarFiltrosAtivos(licitacoesCompletas, empresaPerfil);
     
     console.log('🔍 FILTROS APLICADOS:');
     resultadoFiltros.filtrosAplicados.forEach(filtro => {
       console.log(`  📋 ${filtro}`);
     });
     console.log(`📊 Redução: ${resultadoFiltros.estatisticas.totalInicial} → ${resultadoFiltros.estatisticas.totalFinal} (${resultadoFiltros.estatisticas.reducaoPercentual}%)`);
-
-    // 7. ENRIQUECER dados das licitações com informação complementar
-    const licitacoesEnriquecidas = resultadoFiltros.licitacoesFiltradas.map(licitacao => {
-      // Enriquecer com informacaoComplementar e descricaoItem dos itens
+    
+    // 4. MERGE COM SCORES SEMÂNTICOS E ORDENAR
+    const resultados = resultadoFiltros.licitacoesFiltradas.map(licitacao => {
+      const pineconeMatch = pineconeResults.find(r => r.numeroControlePNCP === licitacao.numeroControlePNCP);
+      const semanticScore = pineconeMatch?.score || 0;
+      
+      // Enriquecer com texto completo para compatibilidade
       const textoEnriquecido = [
         licitacao.objetoCompra || '',
         licitacao.informacaoComplementar || '',
         ...(licitacao.itens?.map(item => item.descricao || '') || [])
       ].filter(text => text && text.trim().length > 0).join(' ');
-
+      
       return {
-        ...licitacao,
-        textoCompleto: textoEnriquecido
-      };
+        licitacao: {
+          ...licitacao,
+          textoCompleto: textoEnriquecido
+        },
+        matchScore: semanticScore,
+        semanticScore: semanticScore,
+        matchDetails: {
+          regexScore: semanticScore * 0.25,
+          levenshteinScore: semanticScore * 0.25,
+          tfidfScore: semanticScore * 0.25,
+          taxonomiaScore: semanticScore * 0.25
+        } as MatchDetails,
+        hybridDetails: {
+          traditional: 0,
+          semantic: semanticScore,
+          combined: semanticScore
+        }
+      } as MatchResult;
     });
-
-    // 8. RERANK SIMPLES: Ordenar por score semântico do Pinecone
-    const finalMatches = licitacoesEnriquecidas
-      .map(licitacao => {
-        // Encontrar score original do Pinecone
-        const candidate = candidates.find(c => c.licitacao.numeroControlePNCP === licitacao.numeroControlePNCP);
-        const pineconeScore = candidate?.pineconeScore || 0;
-        
-        return {
-          licitacao,
-          matchScore: pineconeScore, // Score semântico puro
-          semanticScore: pineconeScore,
-          matchDetails: {
-            regexScore: pineconeScore * 0.25,
-            levenshteinScore: pineconeScore * 0.25,
-            tfidfScore: pineconeScore * 0.25,
-            taxonomiaScore: pineconeScore * 0.25
-          } as MatchDetails,
-          hybridDetails: {
-            traditional: 0,
-            semantic: pineconeScore,
-            combined: pineconeScore
-          }
-        } as MatchResult;
-      })
-      .sort((a, b) => b.matchScore - a.matchScore) // Ordenar por score semântico
-      .slice(0, 20); // Top 20 matches
-
-    console.log(`✅ Matching híbrido concluído: ${finalMatches.length} matches finais`);
+    
+    // 5. FILTRAR POR THRESHOLD DE QUALIDADE (59%) E ORDENAR
+    const finalMatches = resultados.sort((a, b) => b.matchScore - a.matchScore);
+    
+    // console.log(`✅ Matching híbrido concluído: ${resultados.length} → ${finalMatches.length} matches acima de ${THRESHOLD_MINIMO * 100}%`);
     return finalMatches;
     
   } catch (error) {
-    console.error('❌ Erro no matching otimizado:', error);
+    console.error('❌ Erro no matching híbrido:', error);
+    return [];
+  }
+};
+
+/**
+ * NOVA FUNÇÃO: Busca semântica no Pinecone - retorna apenas IDs + scores
+ */
+const searchSemantic = async (empresaPerfil: EmpresaPerfil): Promise<{ numeroControlePNCP: string; score: number }[]> => {
+  try {
+    // 1. Gerar embedding da empresa
+    const empresaEmbedding = await generateEmpresaEmbedding(empresaPerfil);
+    
+    // 2. Construir filtros mínimos do Pinecone (apenas licitações vs editais)
+    const filters = buildPineconeFilters();
+    
+    // 3. Busca vetorial otimizada
+    const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
+    const index = pinecone.index('alicit-editais');
+    
+    const searchResults = await index.query({
+      vector: empresaEmbedding,
+      topK: 1000, // Aumentado para mais candidatos
+      includeValues: false,
+      includeMetadata: true,
+      filter: filters
+    });
+    
+    if (!searchResults.matches?.length) {
+      return [];
+    }
+    
+    // 4. Processar resultados - extrair apenas IDs + scores
+    const results = searchResults.matches
+      .filter(match => {
+        const isLicitacao = match.id?.startsWith('licitacao:');
+        const hasValidMetadata = !!match.metadata?.numeroControlePNCP;
+        
+        if (!isLicitacao || !hasValidMetadata) {
+          console.log(`⚠️ Removendo item inválido: ${match.id} (isLicitacao: ${isLicitacao}, hasMetadata: ${hasValidMetadata})`);
+          return false;
+        }
+        return true;
+      })
+      .map(match => ({
+        numeroControlePNCP: match.metadata?.numeroControlePNCP as string,
+        score: match.score || 0
+      }))
+      .filter(result => result.numeroControlePNCP); // Remove items sem ID
+    
+    console.log(`🔍 Pinecone: ${searchResults.matches.length} → ${results.length} candidatos válidos`);
+    return results;
+    
+  } catch (error) {
+    console.error('❌ Erro na busca semântica Pinecone:', error);
     return [];
   }
 };

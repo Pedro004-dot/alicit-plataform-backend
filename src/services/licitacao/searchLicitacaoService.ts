@@ -1,9 +1,10 @@
 import LicitacaoAdapterFactory from '../../adapters/factories/LicitacaoAdapterFactory';
 import { SearchParams, LicitacaoStandard } from '../../adapters/interfaces/ILicitacaoAdapter';
-import pineconeLicitacaoRepository from '../../repositories/pineconeLicitacaoRepository';
+import licitacaoStorageService from './licitacaoStorageService';
 
 interface SearchLicitacaoInput extends SearchParams {
     dataFim: string;
+    modalidades?: number[]; // 🆕 NOVO: Modalidades específicas (opcional)
 }
 
 const buscarLicitacoes = async (params: SearchLicitacaoInput): Promise<LicitacaoStandard[]> => { 
@@ -12,7 +13,12 @@ const buscarLicitacoes = async (params: SearchLicitacaoInput): Promise<Licitacao
     const fonte = params.fonte || LicitacaoAdapterFactory.getFonteDefault();
     const adapter = LicitacaoAdapterFactory.create(fonte);
     
-    console.log(`🔍 Buscando licitações via ${adapter.getNomeFonte().toUpperCase()}...`);
+    // 📋 LOG DAS MODALIDADES
+    const modalidadesInfo = params.modalidades 
+      ? `modalidades [${params.modalidades.join(', ')}]`
+      : 'TODAS as modalidades';
+    
+    console.log(`🔍 Buscando licitações via ${adapter.getNomeFonte().toUpperCase()} - ${modalidadesInfo}...`);
     
     const licitacoes = await adapter.buscarLicitacoes(params);
     
@@ -23,32 +29,64 @@ const buscarLicitacoes = async (params: SearchLicitacaoInput): Promise<Licitacao
     return licitacoes;
 };
 
-const searchLicitacao = async (data: SearchLicitacaoInput) => {
-    const licitacoes = await buscarLicitacoes(data);
+// 📅 FILTRO DE DATA CENTRALIZADO (alinhado com migrateHistoricalLicitacoes.ts)
+const filterByDataEncerramento = (licitacoes: LicitacaoStandard[]): LicitacaoStandard[] => {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0); // Reset horas para comparação correta
     
-    // 🎯 FILTRO: Apenas licitações ativas (dataEncerramentoProposta > hoje)
-    const hoje = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const licitacoesAtivas = licitacoes.filter(licitacao => {
         const dataEncerramento = licitacao.dataEncerramentoProposta;
         
-        // Se não tem data de encerramento, considera ativa
+        // Se não tem data, considera ativa
         if (!dataEncerramento) return true;
         
-        // Normalizar formato da data (pode vir como YYYY-MM-DD ou YYYYMMDD)
-        let dataFormatada = dataEncerramento;
+        // Converter para Date object para comparação correta
+        let dataEncerramentoObj: Date;
+        
         if (dataEncerramento.length === 8) {
-            // Se está em YYYYMMDD, converter para YYYY-MM-DD
-            dataFormatada = `${dataEncerramento.slice(0,4)}-${dataEncerramento.slice(4,6)}-${dataEncerramento.slice(6,8)}`;
+            // YYYYMMDD
+            const ano = parseInt(dataEncerramento.slice(0, 4));
+            const mes = parseInt(dataEncerramento.slice(4, 6)) - 1; // Month 0-indexed
+            const dia = parseInt(dataEncerramento.slice(6, 8));
+            dataEncerramentoObj = new Date(ano, mes, dia);
+        } else if (dataEncerramento.includes('T')) {
+            // ISO format with time (YYYY-MM-DDTHH:mm:ss)
+            dataEncerramentoObj = new Date(dataEncerramento);
+        } else {
+            // YYYY-MM-DD
+            dataEncerramentoObj = new Date(dataEncerramento);
         }
         
-        return dataFormatada > hoje;
+        return dataEncerramentoObj > hoje;
     });
     
-    console.log(`🔍 Filtro aplicado: ${licitacoes.length} → ${licitacoesAtivas.length} licitações ativas`);
-    console.log(`📅 Critério: dataEncerramentoProposta > ${hoje}`);
-    console.log(`💾 Salvando ${licitacoesAtivas.length} licitações ativas no Pinecone...`);
+    return licitacoesAtivas;
+};
+
+const searchLicitacao = async (data: SearchLicitacaoInput) => {
+    const licitacoes = await buscarLicitacoes(data);
     
-    await pineconeLicitacaoRepository.saveLicitacoes(licitacoesAtivas);
+    // 🎯 USAR FILTRO CENTRALIZADO (mesma lógica do migration)
+    const licitacoesAtivas = filterByDataEncerramento(licitacoes);
+    
+    console.log(`🔍 Filtro aplicado: ${licitacoes.length} → ${licitacoesAtivas.length} licitações ativas`);
+    
+    // Log simplificado (alinhado com migration)
+    if (licitacoes.length > licitacoesAtivas.length) {
+        const filtradas = licitacoes.length - licitacoesAtivas.length;
+        console.log(`❌ ${filtradas} licitações filtradas (data de encerramento expirada)`);
+    }
+    
+    console.log(`💾 Salvando ${licitacoesAtivas.length} licitações ativas usando LicitacaoStorageService...`);
+    
+    // Usar o serviço de storage para coordenar salvamento em ambos os bancos
+    const storageResult = await licitacaoStorageService.saveLicitacoes(licitacoesAtivas);
+    
+    if (storageResult.success) {
+        console.log(`✅ Salvou ${storageResult.total} licitações (Supabase: ${storageResult.supabase}, Pinecone: ${storageResult.pinecone})`);
+    } else {
+        console.error(`❌ Falhas no salvamento:`, storageResult.errors);
+    }
     
 
     return {
@@ -60,4 +98,4 @@ const searchLicitacao = async (data: SearchLicitacaoInput) => {
 };
 
 
-export default { searchLicitacao };
+export default { searchLicitacao, filterByDataEncerramento };

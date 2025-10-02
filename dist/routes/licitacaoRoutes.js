@@ -26,6 +26,11 @@ router.get('/getUniqueLicitacao', getUniqueLicitacaoController_1.default.getUniq
 // diagnostico do Pinecone
 router.get('/pinecone/stats', pineconeDiagnosticController_1.default.obterEstatisticasPinecone);
 router.get('/pinecone/estado/:uf', pineconeDiagnosticController_1.default.obterLicitacoesPorEstado);
+// Novos endpoints de diagnóstico da estrutura
+router.get('/pinecone/index-stats', pineconeDiagnosticController_1.default.obterEstatisticasIndice);
+router.get('/pinecone/samples', pineconeDiagnosticController_1.default.obterAmostrasRecords);
+router.get('/pinecone/metadata-structure', pineconeDiagnosticController_1.default.analisarEstruturaMetadata);
+router.get('/pinecone/full-structure', pineconeDiagnosticController_1.default.obterEstruturaCompleta);
 // rotas de dashboard (DEVEM VIR ANTES das rotas /empresa para evitar conflitos)
 router.get('/:cnpj/dashboard', dashboardController_1.default.getDashboardData);
 router.get('/:cnpj/estagios', dashboardController_1.default.getLicitacoesComEstagios);

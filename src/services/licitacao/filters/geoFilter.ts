@@ -9,7 +9,7 @@ export const filtroGeografico: FiltroDetector = {
   estaAtivo: (perfil: EmpresaPerfil): boolean => {
     const ativo = !!(perfil.cidadeRadar && perfil.raioRadar && perfil.raioRadar > 0);
     if (ativo) {
-      console.log(`🗺️ Filtro geográfico ATIVO: ${perfil.cidadeRadar} + ${perfil.raioRadar}m`);
+      console.log(`🗺️ Filtro geográfico ATIVO: ${perfil.cidadeRadar} + ${perfil.raioRadar}km`);
     } else {
       console.log(`❌ Filtro geográfico INATIVO: cidade=${perfil.cidadeRadar}, raio=${perfil.raioRadar}`);
     }

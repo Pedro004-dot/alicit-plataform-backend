@@ -4,6 +4,7 @@ interface SearchParams {
   fonte?: string;
   pagina?: number;
   filtros?: any;
+  modalidades?: number[]; // 🆕 NOVO: Array de modalidades específicas (opcional)
 }
 
 interface LicitacaoStandard {

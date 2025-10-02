@@ -60,7 +60,12 @@ export interface PNCPLicitacao {
   unidadeOrgao: {
     ufSigla: string;
     municipioNome: string;
+    codigoIbge: string;
   };
+  latitude?: number;
+  longitude?: number;
+  codigoIbge?: string;
+  
   itens: PNCPItem[];
 }
 

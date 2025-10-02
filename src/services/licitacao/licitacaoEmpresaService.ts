@@ -1,5 +1,6 @@
 import licitacaoEmpresaRepository from "../../repositories/licitacaoEmpresaRepository";
 import pineconeLicitacaoRepository from "../../repositories/pineconeLicitacaoRepository";
+import supabaseLicitacaoRepository from "../../repositories/supabaseLicitacaoRepository";
 import LicitacaoDecisaoRepository from "../../repositories/licitacaoDecisaoRepository";
 
 interface CriarLicitacaoEmpresaInput {
@@ -66,15 +67,20 @@ const buscarOuCriar = async (numeroControlePNCP: string, empresaCnpj: string) =>
     if (!licitacaoExistente) {
       console.log(`📥 Licitação ${numeroControlePNCP} não encontrada no Supabase, buscando no Pinecone...`);
       
-      // Buscar do Pinecone
-      const licitacaoPinecone = await pineconeLicitacaoRepository.getLicitacao(numeroControlePNCP);
+      // Buscar do Supabase primeiro, depois Pinecone como fallback
+      let licitacaoEncontrada = await supabaseLicitacaoRepository.getLicitacao(numeroControlePNCP);
       
-      if (licitacaoPinecone) {
-        console.log(`💾 Salvando licitação ${numeroControlePNCP} do Pinecone para o Supabase...`);
-        await LicitacaoDecisaoRepository.salvarLicitacaoCompleta(licitacaoPinecone);
+      if (!licitacaoEncontrada) {
+        console.log(`📥 Licitação ${numeroControlePNCP} não encontrada no Supabase, buscando no Pinecone...`);
+        licitacaoEncontrada = await pineconeLicitacaoRepository.getLicitacao(numeroControlePNCP);
+      }
+      
+      if (licitacaoEncontrada) {
+        console.log(`💾 Salvando licitação ${numeroControlePNCP} no Supabase...`);
+        await LicitacaoDecisaoRepository.salvarLicitacaoCompleta(licitacaoEncontrada);
         console.log(`✅ Licitação ${numeroControlePNCP} sincronizada com sucesso`);
       } else {
-        console.warn(`⚠️ Licitação ${numeroControlePNCP} não encontrada nem no Supabase nem no Pinecone`);
+        console.warn(`⚠️ Licitação ${numeroControlePNCP} não encontrada em nenhum banco`);
         throw new Error(`Licitação ${numeroControlePNCP} não encontrada`);
       }
     } else {

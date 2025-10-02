@@ -1,4 +1,5 @@
 import { Pinecone } from '@pinecone-database/pinecone';
+import redisCache from '../services/cache/redisCache';
 
 // Interfaces iguais ao Redis (mantém compatibilidade total)
 interface Municipio {
@@ -130,7 +131,6 @@ class PineconeLicitacaoRepository {
       const indexExists = indexes.indexes?.some(index => index.name === this.indexName);
       
       if (!indexExists) {
-        console.log(`🔧 Criando índice Pinecone: ${this.indexName}...`);
         await this.pinecone.createIndex({
           name: this.indexName,
           dimension: 1536, // Para embeddings se necessário
@@ -163,8 +163,7 @@ class PineconeLicitacaoRepository {
         ready = indexStats.status?.ready === true;
         
         if (!ready) {
-          console.log(`⏳ Aguardando índice... (${attempts + 1}/${maxAttempts})`);
-          await new Promise(resolve => setTimeout(resolve, 10000));
+            await new Promise(resolve => setTimeout(resolve, 10000));
           attempts++;
         }
       } catch (error) {
@@ -178,22 +177,16 @@ class PineconeLicitacaoRepository {
     }
   }
 
-  /**
-   * Substitui Redis saveLicitacoes - Interface idêntica
-   */
   async saveLicitacoes(licitacoes: PNCPLicitacao[]): Promise<number> {
     try {
       await this.initialize();
       const index = this.pinecone.index(this.indexName);
       
-      console.log(`💾 Processando ${licitacoes.length} licitações para Pinecone...`);
       
       // MELHORIA 1: Filtrar duplicatas antes de processar
       const novasLicitacoes = await this.filterExistingLicitacoes(licitacoes);
-      console.log(`🔄 ${novasLicitacoes.length} licitações novas (${licitacoes.length - novasLicitacoes.length} já existem)`);
       
       if (novasLicitacoes.length === 0) {
-        console.log(`✅ Nenhuma licitação nova para salvar`);
         return 0;
       }
       
@@ -202,38 +195,29 @@ class PineconeLicitacaoRepository {
       
       for (const licitacao of novasLicitacoes) {
         try {
-          console.log(`🔄 Processando licitação ${processedCount + 1}/${novasLicitacoes.length}: ${licitacao.numeroControlePNCP}`);
-          // MELHORIA 2: Gerar embedding real do texto
           const embedding = await this.generateEmbedding(licitacao);
-          console.log(`✅ Embedding gerado para ${licitacao.numeroControlePNCP}: ${embedding.length} dimensões`);
           
           const vector = {
             id: `licitacao:${licitacao.numeroControlePNCP}`,
             values: embedding,
             metadata: {
-              // Licitação completa como JSON
-              data: JSON.stringify(licitacao),
+              // 🔄 SIMPLIFICADO: Apenas metadados essenciais para busca semântica
+              // Dados completos agora ficam no Supabase
               numeroControlePNCP: licitacao.numeroControlePNCP,
-              modalidadeNome: licitacao.modalidadeNome || '',
-              valorTotal: licitacao.valorTotalEstimado || 0,
-              municipio: licitacao.unidadeOrgao?.municipioNome || '',
-              uf: licitacao.unidadeOrgao?.ufSigla || '',
-              // MELHORIA 3: Manter texto completo para busca textual
-              objetoCompraCompleto: licitacao.objetoCompra || '',
               objetoCompra: (licitacao.objetoCompra || '').substring(0, 1000),
-              situacaoCompra: licitacao.situacaoCompraNome || '',
-              dataAbertura: licitacao.dataAberturaProposta || '',
-              orgaoRazaoSocial: licitacao.orgaoEntidade?.razaoSocial || '',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              modalidadeNome: licitacao.modalidadeNome || '',
+              uf: licitacao.unidadeOrgao?.ufSigla || '',
+              municipio: licitacao.unidadeOrgao?.municipioNome || '',
+              valorTotal: licitacao.valorTotalEstimado || 0,
+              createdAt: new Date().toISOString()
+              // Removido: data (JSON completo), objetoCompraCompleto, situacaoCompra, etc.
             }
           };
           
           vectors.push(vector);
           processedCount++;
         } catch (embeddingError) {
-          console.warn(`⚠️ Erro ao gerar embedding para ${licitacao.numeroControlePNCP}:`, embeddingError);
-          // Continua com próxima licitação
+            // Continua com próxima licitação
         }
       }
       
@@ -249,9 +233,7 @@ class PineconeLicitacaoRepository {
         try {
           await this.upsertWithRetry(index, batch);
           savedCount += batch.length;
-          console.log(`📦 Batch ${batchNum}/${totalBatches}: ${batch.length} licitações salvas (Total: ${savedCount}/${vectors.length})`);
         } catch (batchError) {
-          console.error(`❌ Erro no batch ${batchNum}:`, batchError);
           // Continua com próximo batch
         }
         
@@ -261,7 +243,6 @@ class PineconeLicitacaoRepository {
         }
       }
       
-      console.log(`✅ ${savedCount} licitações salvas no Pinecone (${vectors.length - savedCount} falharam)`);
       return savedCount;
     } catch (error) {
       console.error('❌ Erro ao salvar licitações no Pinecone:', error);
@@ -285,7 +266,6 @@ class PineconeLicitacaoRepository {
         const existingInBatch = Object.keys(fetchResponse.records || {});
         existingIds.push(...existingInBatch);
       } catch (error) {
-        console.warn('⚠️ Erro ao verificar duplicatas, continuando...', error);
       }
     }
     
@@ -347,7 +327,6 @@ class PineconeLicitacaoRepository {
 
       // Se OpenAI configurado, usar embedding real
       if (process.env.OPENAI_API_KEY) {
-        console.log(`🤖 Gerando embedding OpenAI para: "${textoCompleto.substring(0, 100)}..."`);
         const { OpenAI } = await import('openai');
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         
@@ -357,7 +336,6 @@ class PineconeLicitacaoRepository {
           encoding_format: 'float',
         });
         
-        console.log(`✅ Embedding OpenAI recebido: ${response.data[0].embedding.length} dimensões`);
         return response.data[0].embedding;
       } else {
         // Fallback para hash-based vector se OpenAI não configurado
@@ -407,46 +385,17 @@ class PineconeLicitacaoRepository {
   }
 
   /**
-   * Substitui Redis getLicitacao - Interface idêntica
+   * REMOVIDO: getLicitacao agora é responsabilidade do Supabase
+   * Mantido apenas para compatibilidade durante transição
    */
   async getLicitacao(numeroControlePNCP: string): Promise<PNCPLicitacao | null> {
+    console.warn('⚠️ DEPRECATED: getLicitacao() do Pinecone foi movido para Supabase. Use supabaseLicitacaoRepository.getLicitacao()');
+    
     try {
       await this.initialize();
       const index = this.pinecone.index(this.indexName);
       
-      // Tentar buscar diretamente primeiro
-      const fetchResponse = await index.fetch([`licitacao:${numeroControlePNCP}`]);
-      const vector = fetchResponse.records?.[`licitacao:${numeroControlePNCP}`];
-      
-      if (vector && vector.metadata?.data) {
-        const licitacao = JSON.parse(vector.metadata.data as string) as PNCPLicitacao;
-        console.log(`✅ Licitação encontrada: ${numeroControlePNCP} com ${licitacao.itens?.length || 0} itens`);
-        
-        console.log('📋 DADOS DA LICITAÇÃO COMPLETOS:');
-        console.log('  numeroControlePNCP:', licitacao.numeroControlePNCP);
-        console.log('  objetoCompra:', licitacao.objetoCompra?.substring(0, 100) + '...');
-        console.log('  modalidadeNome:', licitacao.modalidadeNome);
-        console.log('  valorTotalEstimado:', licitacao.valorTotalEstimado?.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}));
-        console.log('  situacaoCompraNome:', licitacao.situacaoCompraNome);
-        console.log('  dataAberturaProposta:', licitacao.dataAberturaProposta);
-        console.log('  orgaoEntidade.razaoSocial:', licitacao.orgaoEntidade?.razaoSocial);
-        console.log('  orgaoEntidade.cnpj:', licitacao.orgaoEntidade?.cnpj);
-        console.log('  unidadeOrgao.municipioNome:', licitacao.unidadeOrgao?.municipioNome);
-        console.log('  unidadeOrgao.ufSigla:', licitacao.unidadeOrgao?.ufSigla);
-        console.log('  itens:', licitacao.itens?.length || 0, 'itens encontrados');
-        if (licitacao.itens && licitacao.itens.length > 0) {
-          console.log('  principais itens:');
-          licitacao.itens.slice(0, 3).forEach((item, idx) => {
-            console.log(`    ${idx + 1}. ${item.descricao?.substring(0, 80)}... (Valor: ${item.valorTotal?.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})})`);
-          });
-        }
-        
-        return licitacao;
-      }
-      
-      // Se não encontrar, tentar buscar por query com filtro
-      console.log(`🔍 Busca direta falhou, tentando query com filtro para: ${numeroControlePNCP}`);
-      
+      // Busca simplificada apenas para fallback
       const queryResponse = await index.query({
         vector: new Array(1536).fill(0.1),
         topK: 1,
@@ -459,38 +408,35 @@ class PineconeLicitacaoRepository {
         const match = queryResponse.matches[0];
         if (match.metadata?.data) {
           const licitacao = JSON.parse(match.metadata.data as string) as PNCPLicitacao;
-          console.log(`✅ Licitação encontrada via query: ${numeroControlePNCP} com ${licitacao.itens?.length || 0} itens`);
           return licitacao;
         }
       }
       
-     
-      
-      console.log(`❌ Licitação não encontrada: ${numeroControlePNCP}`);
       return null;
     } catch (error) {
-      console.error('❌ Erro ao buscar licitação no Pinecone:', error);
-      
-    
-      
+      console.error('❌ Erro ao buscar licitação no Pinecone (fallback):', error);
       return null;
     }
   }
 
 
 
+
   /**
-   * Busca todas as licitações - Interface compatível com Redis
+   * REMOVIDO: getAllLicitacoes agora é responsabilidade do Supabase
+   * Mantido apenas para compatibilidade durante transição
    */
   async getAllLicitacoes(): Promise<PNCPLicitacao[]> {
+    console.warn('⚠️ DEPRECATED: getAllLicitacoes() do Pinecone foi movido para Supabase. Use supabaseLicitacaoRepository.getAllLicitacoes()');
+    
     try {
+      // Busca simplificada apenas para fallback
       await this.initialize();
       const index = this.pinecone.index(this.indexName);
       
-      // Query para buscar todas as licitações
       const queryResponse = await index.query({
         vector: new Array(1536).fill(0.1),
-        topK: 10000, // Limite alto para pegar todas
+        topK: 1000, // Reduzido para fallback
         includeValues: false,
         includeMetadata: true,
         filter: { numeroControlePNCP: { $exists: true } }
@@ -502,19 +448,18 @@ class PineconeLicitacaoRepository {
         if (match.metadata?.data) {
           try {
             const licitacao = JSON.parse(match.metadata.data as string) as PNCPLicitacao;
-            if (licitacao.itens?.length > 0) {
+            if (licitacao && licitacao.numeroControlePNCP) {
               licitacoes.push(licitacao);
             }
           } catch (error) {
-            console.warn('Erro ao parsear licitação do Pinecone:', error);
+            // Continue processing
           }
         }
       }
       
-      console.log(`✅ Carregadas ${licitacoes.length} licitações do Pinecone`);
       return licitacoes;
     } catch (error) {
-      console.error('❌ Erro ao buscar todas licitações no Pinecone:', error);
+      console.error('❌ Erro ao buscar licitações no Pinecone (fallback):', error);
       return [];
     }
   }
@@ -551,22 +496,386 @@ class PineconeLicitacaoRepository {
 
   // Métodos de municípios - Implementação básica (pode ser expandida)
   async loadMunicipiosToRedis(): Promise<number> {
-    console.log('⚠️ Método loadMunicipiosToRedis não implementado no Pinecone');
     return 0;
   }
 
   async getMunicipioByIbge(codigoIbge: string): Promise<Municipio | null> {
-    console.log('⚠️ Método getMunicipioByIbge não implementado no Pinecone');
     return null;
   }
 
   async getMunicipioByNome(nome: string): Promise<Municipio | null> {
-    console.log('⚠️ Método getMunicipioByNome não implementado no Pinecone');
     return null;
   }
 
   async checkMunicipiosLoaded(): Promise<boolean> {
     return false;
+  }
+
+  /**
+   * Métodos para inspecionar estrutura do Pinecone
+   */
+  async getIndexStats(): Promise<any> {
+    try {
+      await this.initialize();
+      const index = this.pinecone.index(this.indexName);
+      
+      // Estatísticas do índice
+      const stats = await index.describeIndexStats();
+      return stats;
+    } catch (error) {
+      console.error('❌ Erro ao obter estatísticas do índice:', error);
+      return null;
+    }
+  }
+
+  async getSampleData(limit: number = 2): Promise<any[]> {
+    try {
+      await this.initialize();
+      const index = this.pinecone.index(this.indexName);
+      
+      // Buscar amostras de dados
+      const queryResponse = await index.query({
+        vector: new Array(1536).fill(0.1),
+        topK: limit,
+        includeValues: false,
+        includeMetadata: true,
+        filter: { numeroControlePNCP: { $exists: true } }
+      });
+      
+      const samples = [];
+      for (const match of queryResponse.matches || []) {
+        if (match.metadata) {
+          // Estrutura da metadata sem o JSON completo (muito grande)
+          const { data, ...metadataStructure } = match.metadata;
+          
+          samples.push({
+            id: match.id,
+            score: match.score,
+            metadata: metadataStructure,
+            // Apenas primeiros 200 chars do JSON para visualização
+            dataPreview: data ? (data as string).substring(0, 200) + '...' : null
+          });
+        }
+      }
+      
+      return samples;
+    } catch (error) {
+      console.error('❌ Erro ao buscar amostras:', error);
+      return [];
+    }
+  }
+
+  async analyzeMetadataStructure(): Promise<any> {
+    try {
+      await this.initialize();
+      const index = this.pinecone.index(this.indexName);
+      
+      // Buscar uma amostra maior para análise
+      const queryResponse = await index.query({
+        vector: new Array(1536).fill(0.1),
+        topK: 50,
+        includeValues: false,
+        includeMetadata: true,
+        filter: { numeroControlePNCP: { $exists: true } }
+      });
+      
+      const fieldCounts: Record<string, number> = {};
+      const fieldTypes: Record<string, Set<string>> = {};
+      const fieldSamples: Record<string, any[]> = {};
+      
+      for (const match of queryResponse.matches || []) {
+        if (match.metadata) {
+          for (const [field, value] of Object.entries(match.metadata)) {
+            // Contar campos
+            fieldCounts[field] = (fieldCounts[field] || 0) + 1;
+            
+            // Identificar tipos
+            if (!fieldTypes[field]) fieldTypes[field] = new Set();
+            fieldTypes[field].add(typeof value);
+            
+            // Coletar amostras (exceto data que é muito grande)
+            if (field !== 'data') {
+              if (!fieldSamples[field]) fieldSamples[field] = [];
+              if (fieldSamples[field].length < 3) {
+                fieldSamples[field].push(value);
+              }
+            }
+          }
+        }
+      }
+      
+      // Converter Sets para arrays
+      const analysis: Record<string, any> = {};
+      for (const field of Object.keys(fieldCounts)) {
+        analysis[field] = {
+          count: fieldCounts[field],
+          types: Array.from(fieldTypes[field]),
+          samples: fieldSamples[field] || []
+        };
+      }
+      
+      return {
+        totalSamples: queryResponse.matches?.length || 0,
+        fields: analysis
+      };
+    } catch (error) {
+      console.error('❌ Erro ao analisar estrutura:', error);
+      return null;
+    }
+  }
+
+  async getFullDataStructure(): Promise<any> {
+    try {
+      const stats = await this.getIndexStats();
+      const samples = await this.getSampleData(2);
+      const structure = await this.analyzeMetadataStructure();
+      
+      return {
+        indexStats: stats,
+        sampleRecords: samples,
+        metadataStructure: structure
+      };
+    } catch (error) {
+      console.error('❌ Erro ao obter estrutura completa:', error);
+      return null;
+    }
+  }
+
+  /**
+   * NOVO: Busca semântica que retorna apenas IDs para uso híbrido com Supabase
+   */
+  async buscarIdsRelevantes(texto: string): Promise<string[]> {
+    try {
+      await this.initialize();
+      const index = this.pinecone.index(this.indexName);
+      
+      if (!texto || texto.trim().length < 3) return [];
+      
+      // Gerar embedding do texto de busca
+      const queryEmbedding = await this.generateQueryEmbedding(texto);
+      
+      // Busca semântica otimizada
+      const queryResponse = await index.query({
+        vector: queryEmbedding,
+        topK: 100, // Reduzido para performance
+        includeValues: false,
+        includeMetadata: true,
+        filter: { numeroControlePNCP: { $exists: true } }
+      });
+      
+      // Retornar apenas IDs dos resultados mais relevantes
+      const ids = queryResponse.matches
+        ?.filter(match => match.score && match.score > 0.7) // Filtro de relevância
+        ?.map(match => match.metadata?.numeroControlePNCP as string)
+        ?.filter(Boolean) || [];
+      
+      console.log(`🎯 Busca semântica encontrou ${ids.length} IDs relevantes para: "${texto}"`);
+      return ids;
+      
+    } catch (error) {
+      console.error('❌ Erro na busca semântica por IDs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Gerar embedding para query de busca
+   */
+  private async generateQueryEmbedding(texto: string): Promise<number[]> {
+    try {
+      if (process.env.OPENAI_API_KEY) {
+        const { OpenAI } = await import('openai');
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        
+        const response = await openai.embeddings.create({
+          model: 'text-embedding-3-small',
+          input: texto.substring(0, 8000),
+          encoding_format: 'float',
+        });
+        
+        return response.data[0].embedding;
+      } else {
+        return this.generateHashBasedVector(texto);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao gerar embedding da query:', error);
+      return this.generateHashBasedVector(texto);
+    }
+  }
+
+  /**
+   * DEPRECATED: Busca textual otimizada - Use buscarIdsRelevantes + Supabase
+   * Mantido para compatibilidade durante transição
+   */
+  async buscarPorTexto(texto: string): Promise<PNCPLicitacao[]> {
+    console.warn('⚠️ DEPRECATED: buscarPorTexto() foi substituído por buscarIdsRelevantes() + Supabase');
+    
+    // Implementação simplificada para fallback
+    try {
+      await this.initialize();
+      const index = this.pinecone.index(this.indexName);
+      
+      const textoNormalizado = texto.toLowerCase().trim();
+      if (!textoNormalizado) return [];
+      
+      const resultados: PNCPLicitacao[] = [];
+      const idsEncontrados = new Set<string>();
+      
+      // 🎯 ESTRATÉGIA 1: Busca por categorias estratégicas
+      // Dividir a base de 109k+ em consultas mais focadas
+      const categoriasModalidade = [
+        'pregao_eletronico', 'concorrencia', 'tomada_de_precos', 
+        'convite', 'concurso', 'leilao'
+      ];
+      
+      for (const modalidade of categoriasModalidade) {
+        try {
+          const queryResponse = await index.query({
+            vector: new Array(1536).fill(0.1),
+            topK: 2000, // Otimizado para performance
+            includeValues: false,
+            includeMetadata: true,
+            filter: {
+              $and: [
+                { numeroControlePNCP: { $exists: true } },
+                { modalidadeNome: { $eq: modalidade } }
+              ]
+            }
+          });
+          
+          await this.processarResultados(queryResponse, textoNormalizado, resultados, idsEncontrados);
+        } catch (error) {
+          console.log(`⚠️ Erro na busca por modalidade ${modalidade}:`, error);
+        }
+      }
+      
+      // 🎯 ESTRATÉGIA 2: Busca por Estados (UF) - cobertura geográfica
+      if (resultados.length < 100) {
+        const ufsComuns = ['SP', 'RJ', 'MG', 'RS', 'PR', 'SC', 'BA', 'PE', 'CE', 'GO'];
+        
+        for (const uf of ufsComuns) {
+          try {
+            const queryResponse = await index.query({
+              vector: new Array(1536).fill(0.1),
+              topK: 1500,
+              includeValues: false,
+              includeMetadata: true,
+              filter: {
+                $and: [
+                  { numeroControlePNCP: { $exists: true } },
+                  { uf: { $eq: uf } }
+                ]
+              }
+            });
+            
+            await this.processarResultados(queryResponse, textoNormalizado, resultados, idsEncontrados);
+          } catch (error) {
+            console.log(`⚠️ Erro na busca por UF ${uf}:`, error);
+          }
+        }
+      }
+      
+      // 🎯 ESTRATÉGIA 3: Busca por faixas de valor - cobertura econômica
+      if (resultados.length < 50) {
+        const faixasValor = [
+          { min: 0, max: 100000 },
+          { min: 100000, max: 500000 },
+          { min: 500000, max: 1000000 },
+          { min: 1000000, max: 10000000 }
+        ];
+        
+        for (const faixa of faixasValor) {
+          try {
+            const queryResponse = await index.query({
+              vector: new Array(1536).fill(0.1),
+              topK: 1200,
+              includeValues: false,
+              includeMetadata: true,
+              filter: {
+                $and: [
+                  { numeroControlePNCP: { $exists: true } },
+                  { valorTotal: { $gte: faixa.min, $lte: faixa.max } }
+                ]
+              }
+            });
+            
+            await this.processarResultados(queryResponse, textoNormalizado, resultados, idsEncontrados);
+          } catch (error) {
+            console.log(`⚠️ Erro na busca por valor ${faixa.min}-${faixa.max}:`, error);
+          }
+        }
+      }
+      
+      console.log(`🔍 Busca textual otimizada encontrou ${resultados.length} resultados únicos`);
+      return resultados.slice(0, 1000); // Limitar resultado final
+      
+    } catch (error) {
+      console.error('❌ Erro na busca textual otimizada:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Processa resultados e filtra por relevância textual
+   */
+  private async processarResultados(
+    queryResponse: any, 
+    textoNormalizado: string, 
+    resultados: PNCPLicitacao[], 
+    idsEncontrados: Set<string>
+  ): Promise<void> {
+    for (const match of queryResponse.matches || []) {
+      if (match.metadata?.data && !idsEncontrados.has(match.id)) {
+        try {
+          const licitacao = JSON.parse(match.metadata.data as string) as PNCPLicitacao;
+          
+          if (licitacao && licitacao.numeroControlePNCP) {
+            // Verificar relevância textual
+            if (this.verificarRelevanciaTextual(licitacao, textoNormalizado)) {
+              resultados.push(licitacao);
+              idsEncontrados.add(match.id);
+            }
+          }
+        } catch (error) {
+          // Continue processando
+        }
+      }
+    }
+  }
+  
+  /**
+   * Verifica se a licitação é relevante para o texto buscado
+   */
+  private verificarRelevanciaTextual(licitacao: PNCPLicitacao, textoNormalizado: string): boolean {
+    const campos = [
+      licitacao.objetoCompra || '',
+      licitacao.informacaoComplementar || '',
+      licitacao.numeroControlePNCP || '',
+      licitacao.orgaoEntidade?.razaoSocial || '',
+      licitacao.unidadeOrgao?.nomeUnidade || '',
+      licitacao.modalidadeNome || '',
+      licitacao.situacaoCompraNome || '',
+      ...(licitacao.itens?.map(item => 
+        `${item.descricao || ''} ${item.materialOuServicoNome || ''} ${item.itemCategoriaNome || ''}`
+      ) || [])
+    ];
+    
+    const textoCompleto = campos.join(' ').toLowerCase();
+    
+    // Estratégia de busca flexível
+    const palavras = textoNormalizado.split(' ').filter(p => p.length > 2);
+    
+    if (palavras.length === 0) {
+      return textoCompleto.includes(textoNormalizado);
+    }
+    
+    if (palavras.length === 1) {
+      return textoCompleto.includes(palavras[0]);
+    }
+    
+    // Para múltiplas palavras, pelo menos 70% devem estar presentes
+    const palavrasEncontradas = palavras.filter(palavra => textoCompleto.includes(palavra));
+    return palavrasEncontradas.length >= Math.ceil(palavras.length * 0.7);
   }
 }
 
@@ -574,9 +883,16 @@ class PineconeLicitacaoRepository {
 const pineconeLicitacaoRepository = new PineconeLicitacaoRepository();
 
 export default {
+  // 🔄 MÉTODOS PRINCIPAIS (Embeddings semânticos)
   saveLicitacoes: (licitacoes: PNCPLicitacao[]) => pineconeLicitacaoRepository.saveLicitacoes(licitacoes),
+  buscarIdsRelevantes: (texto: string) => pineconeLicitacaoRepository.buscarIdsRelevantes(texto),
+  
+  // ⚠️ MÉTODOS DEPRECATED (Migrados para Supabase)
   getLicitacao: (numeroControlePNCP: string) => pineconeLicitacaoRepository.getLicitacao(numeroControlePNCP),
   getAllLicitacoes: () => pineconeLicitacaoRepository.getAllLicitacoes(),
+  buscarPorTexto: (texto: string) => pineconeLicitacaoRepository.buscarPorTexto(texto),
+  
+  // 🗂️ CACHE SERVICE (Mantido para compatibilidade)
   getCachedText: (key: string) => pineconeLicitacaoRepository.getCachedText(key),
   setCachedText: (key: string, value: string[]) => pineconeLicitacaoRepository.setCachedText(key, value),
   getCachedScore: (key: string) => pineconeLicitacaoRepository.getCachedScore(key),
@@ -584,8 +900,16 @@ export default {
   clearTextCache: () => pineconeLicitacaoRepository.clearTextCache(),
   clearScoreCache: () => pineconeLicitacaoRepository.clearScoreCache(),
   clearAllCaches: () => pineconeLicitacaoRepository.clearAllCaches(),
+  
+  // 🏛️ MUNICÍPIOS (Placeholder - pode ser implementado no Supabase)
   loadMunicipiosToRedis: () => pineconeLicitacaoRepository.loadMunicipiosToRedis(),
   getMunicipioByIbge: (codigoIbge: string) => pineconeLicitacaoRepository.getMunicipioByIbge(codigoIbge),
   getMunicipioByNome: (nome: string) => pineconeLicitacaoRepository.getMunicipioByNome(nome),
-  checkMunicipiosLoaded: () => pineconeLicitacaoRepository.checkMunicipiosLoaded()
+  checkMunicipiosLoaded: () => pineconeLicitacaoRepository.checkMunicipiosLoaded(),
+  
+  // 🔍 MÉTODOS DE INSPEÇÃO (Mantidos para debug)
+  getIndexStats: () => pineconeLicitacaoRepository.getIndexStats(),
+  getSampleData: (limit?: number) => pineconeLicitacaoRepository.getSampleData(limit),
+  analyzeMetadataStructure: () => pineconeLicitacaoRepository.analyzeMetadataStructure(),
+  getFullDataStructure: () => pineconeLicitacaoRepository.getFullDataStructure()
 };

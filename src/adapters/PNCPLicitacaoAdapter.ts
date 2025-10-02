@@ -117,6 +117,8 @@ interface PNCPResponse {
 
 class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
   private readonly batchSize = 3;
+  private readonly REQUEST_DELAY = 1000; // 1s entre requests (respeitoso com API pública)
+  private readonly REQUEST_TIMEOUT = 60000; // 60s timeout (alinhado com migration)
 
   getNomeFonte(): string {
     return 'pncp';
@@ -125,48 +127,44 @@ class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
   async buscarLicitacoes(params: SearchParams): Promise<LicitacaoStandard[]> {
     console.log(`🔍 PNCP: Iniciando busca completa - dataInicio: ${params.dataInicio}, dataFim: ${params.dataFim}`);
     
-    const [publicacao, proposta] = await Promise.all([
-      this.buscarTodas('publicacao', params),
-      this.buscarTodas('proposta', params)
-    ]);
+    // 🎯 USAR APENAS ENDPOINT PUBLICACAO (como migration script)
+    console.log(`🔄 PNCP: Processando APENAS endpoint 'publicacao' (como migration)`);
     
-    console.log(`📊 PNCP: Publicação=${publicacao.length}, Proposta=${proposta.length}`);
+    const publicacao = await this.buscarTodas('publicacao', params);
+    console.log(`✅ PNCP: Publicação finalizada: ${publicacao.length} licitações`);
     
-    const combinadas = this.combinarDados(publicacao, proposta);
-    console.log(`✅ PNCP: ${combinadas.length} licitações encontradas após combinação`);
+    // 📊 NÃO BUSCAR PROPOSTA (migration só usa publicacao)
+    console.log(`📊 PNCP: Total encontrado: ${publicacao.length} licitações (apenas publicacao)`);
     
-    return combinadas.map(this.converterParaPadrao);
+    return publicacao.map(this.converterParaPadrao);
   }
 
   private async buscarTodas(tipo: keyof typeof ENDPOINTS, params: SearchParams): Promise<PNCPLicitacao[]> {
-    console.log(`🔄 PNCP: Iniciando busca ${tipo} - processando ${MODALIDADES.length} modalidades (2 paralelas)`);
+    // 📋 DETERMINAR MODALIDADES A PROCESSAR
+    const modalidadesParaBuscar = params.modalidades || MODALIDADES;
+    
+    console.log(`🔄 PNCP: Iniciando busca ${tipo} - processando ${modalidadesParaBuscar.length} modalidades (sequencial)`);
+    console.log(`📋 Modalidades: [${modalidadesParaBuscar.join(', ')}]`);
+    
     const todas: PNCPLicitacao[] = [];
     
-    // Processar modalidades em batches de 2 (paralelização controlada)
-    const BATCH_SIZE = 2;
-    for (let i = 0; i < MODALIDADES.length; i += BATCH_SIZE) {
-      const batch = MODALIDADES.slice(i, i + BATCH_SIZE);
-      console.log(`🔄 PNCP: Processando batch ${Math.floor(i/BATCH_SIZE) + 1}: modalidades [${batch.join(', ')}] (${tipo})`);
+    // 🔄 PROCESSAMENTO SEQUENCIAL (alinhado com migration script)
+    for (let i = 0; i < modalidadesParaBuscar.length; i++) {
+      const modalidade = modalidadesParaBuscar[i];
+      console.log(`📋 PNCP: Processando modalidade ${modalidade} (${i + 1}/${modalidadesParaBuscar.length}) - ${tipo}`);
       
-      // Processar modalidades do batch em paralelo
-      const promisesModalidades = batch.map(async (modalidade) => {
-        console.log(`📋 PNCP: Iniciando modalidade ${modalidade} (${tipo})`);
+      try {
         const licitacoes = await this.buscarModalidade(tipo, modalidade, params);
         console.log(`✅ PNCP: Modalidade ${modalidade} retornou ${licitacoes.length} licitações`);
-        return { modalidade, licitacoes };
-      });
-      
-      const resultados = await Promise.all(promisesModalidades);
-      
-      // Adicionar resultados na ordem
-      for (const resultado of resultados) {
-        todas.push(...resultado.licitacoes);
+        todas.push(...licitacoes);
+      } catch (error) {
+        console.error(`❌ PNCP: Erro na modalidade ${modalidade}:`, error);
       }
       
-      // Pausa menor entre batches (500ms em vez de 10s)
-      if (i + BATCH_SIZE < MODALIDADES.length) {
-        console.log('⏱️ PNCP: Aguardando 500ms antes do próximo batch...');
-        await new Promise(resolve => setTimeout(resolve, 500));
+      // Pausa respeitosa entre modalidades (alinhado com migration)
+      if (i < modalidadesParaBuscar.length - 1) {
+        console.log(`⏱️ PNCP: Aguardando ${this.REQUEST_DELAY}ms antes da próxima modalidade...`);
+        await new Promise(resolve => setTimeout(resolve, this.REQUEST_DELAY));
       }
     }
     
@@ -180,28 +178,39 @@ class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
   }
   
   private converterParametros(params: SearchParams, modalidade: number): PNCPSearchParams {
+    // 📅 USAR PARÂMETROS PASSADOS (como migration) ou hoje como fallback
     const hoje = new Date().toISOString().split('T')[0].replace(/-/g, '');
     
+    // Converter formato YYYY-MM-DD para YYYYMMDD se necessário
+    const dataInicial = params.dataInicio?.replace(/-/g, '') || hoje;
+    const dataFinal = params.dataFim?.replace(/-/g, '') || hoje;
+    
+    console.log(`📅 [DEBUG] Datas convertidas: ${params.dataInicio} -> ${dataInicial}, ${params.dataFim} -> ${dataFinal}`);
+    
     return {
-      dataInicial: params.dataInicio?.replace(/-/g, '') || hoje,
-      dataFinal: params.dataFim?.replace(/-/g, '') || hoje,
+      dataInicial, // ✅ Usar parâmetro ou hoje
+      dataFinal,   // ✅ Usar parâmetro ou hoje
       modalidadeId: modalidade
     };
   }
 
   private async buscarPaginado(url: string, params: PNCPSearchParams): Promise<PNCPLicitacao[]> {
-    const todas: PNCPLicitacao[] = [];
+    console.log(`🔍 [DEBUG] Iniciando buscarPaginado - modalidade ${params.modalidadeId}`);
+    const todasLicitacoes: PNCPLicitacao[] = [];
     let pagina = 1;
     let totalPaginas = 1;
     
     try {
+      // 🎯 FASE 1: COLETAR TODAS AS PÁGINAS (como migration - SEM itens)
       do {
         console.log(`📄 PNCP: Modalidade ${params.modalidadeId} - página ${pagina}/${totalPaginas}`);
-        const response = await this.buscarPagina(url, { ...params, pagina });
+        
+        const response = await this.fetchPageLikeMigration(url, params, pagina);
         
         if (!response?.data) {
-          console.log(`❌ PNCP: Sem dados na página ${pagina} - modalidade ${params.modalidadeId}`);
-          break;
+          console.log(`❌ PNCP: Sem dados na página ${pagina} - modalidade ${params.modalidadeId}. Pulando para a próxima página...`);
+          pagina++;
+          continue;
         }
         
         if (pagina === 1) {
@@ -209,17 +218,29 @@ class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
           console.log(`📊 PNCP: Modalidade ${params.modalidadeId} - ${response.totalRegistros} registros em ${totalPaginas} páginas`);
         }
         
-        const licitacoesComItens = await this.adicionarItens(response.data);
-        todas.push(...licitacoesComItens);
+        // ✅ ADICIONAR APENAS AS LICITAÇÕES (sem itens ainda)
+        todasLicitacoes.push(...response.data);
         pagina++;
         
       } while (pagina <= totalPaginas);
       
+      console.log(`🔄 PNCP: Coletadas ${todasLicitacoes.length} licitações de ${totalPaginas} páginas`);
+      
+      // 🎯 FASE 2: ADICIONAR ITENS (como migration - depois de coletar tudo)
+      if (todasLicitacoes.length > 0) {
+        console.log(`🔍 [DEBUG] Adicionando itens para ${todasLicitacoes.length} licitações...`);
+        const licitacoesComItens = await this.adicionarItens(todasLicitacoes);
+        console.log(`🔍 [DEBUG] Itens adicionados para ${licitacoesComItens.length} licitações`);
+        return licitacoesComItens;
+      }
+      
     } catch (error) {
       console.warn(`⚠️ PNCP: Erro modalidade ${params.modalidadeId}:`, error);
+      console.error(`💥 [DEBUG] Stack trace:`, error);
     }
     
-    return todas;
+    console.log(`🔍 [DEBUG] Finalizando buscarPaginado - modalidade ${params.modalidadeId}, total: ${todasLicitacoes.length}`);
+    return todasLicitacoes;
   }
 
   private combinarDados(publicacao: PNCPLicitacao[], proposta: PNCPLicitacao[]): PNCPLicitacao[] {
@@ -233,8 +254,12 @@ class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
   }
 
   private async buscarPagina(url: string, params: PNCPSearchParams): Promise<PNCPResponse | null> {
-    const timeout = 10000; // 10 segundos
     const maxRetries = 3;
+    
+    console.log(`🔍 [DEBUG] Iniciando buscarPagina - modalidade ${params.modalidadeId}, página ${params.pagina}`);
+    
+    // 🔄 DELAY RESPEITOSO (alinhado com migration script)
+    await new Promise(resolve => setTimeout(resolve, this.REQUEST_DELAY));
     
     for (let tentativa = 1; tentativa <= maxRetries; tentativa++) {
       try {
@@ -248,46 +273,53 @@ class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
         const fullUrl = `${url}?${queryParams}`;
         console.log(`🌐 PNCP: Tentativa ${tentativa}/${maxRetries} - ${fullUrl}`);
         
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        // 🎯 USAR MESMA IMPLEMENTAÇÃO DO MIGRATION (Promise.race)
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error(`Timeout de ${this.REQUEST_TIMEOUT}ms na página ${params.pagina}`)), this.REQUEST_TIMEOUT);
+        });
         
-        try {
-          const response = await fetch(fullUrl, {
-            signal: controller.signal,
-            headers: {
-              'User-Agent': 'Alicit-Bot/1.0',
-              'Accept': 'application/json'
-            }
-          });
+        const fetchPromise = fetch(fullUrl, {
+          headers: {
+            'User-Agent': 'Alicit-Integration/2.0 (Sistema de Análise de Licitações)',
+            'Accept': 'application/json',
+            'Accept-Language': 'pt-BR',
+            'Connection': 'keep-alive',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        if (!response.ok) {
+          console.warn(`⚠️ PNCP: HTTP ${response.status} - modalidade ${params.modalidadeId}, página ${params.pagina}, tentativa ${tentativa}`);
           
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            console.warn(`⚠️ PNCP: HTTP ${response.status} - modalidade ${params.modalidadeId}, página ${params.pagina}, tentativa ${tentativa}`);
-            
-            if (response.status >= 500 && tentativa < maxRetries) {
-              console.log(`🔄 PNCP: Erro do servidor, tentando novamente em 2s...`);
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              continue;
-            }
-            
-            return null;
+          if (response.status >= 500 && tentativa < maxRetries) {
+            console.log(`🔄 PNCP: Erro do servidor, tentando novamente em 2s...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
           }
           
-          return await response.json();
-          
-        } catch (fetchError: any) {
-          clearTimeout(timeoutId);
-          
-          if (fetchError.name === 'AbortError') {
-            console.warn(`⏱️ PNCP: Timeout (${timeout}ms) - modalidade ${params.modalidadeId}, página ${params.pagina}, tentativa ${tentativa}`);
-          } else {
-            throw fetchError;
-          }
+          return null;
         }
         
+        // 🎯 USAR MESMA IMPLEMENTAÇÃO DO MIGRATION (text -> parse)
+        const text = await response.text();
+        
+        if (!text.trim()) {
+          console.warn(`⚠️ Resposta vazia - modalidade ${params.modalidadeId}, página ${params.pagina}`);
+          return null;
+        }
+        
+        const parsed = JSON.parse(text);
+        console.log(`✅ [DEBUG] JSON recebido - modalidade ${params.modalidadeId}, página ${params.pagina}, registros: ${parsed?.data?.length || 0}`);
+        return parsed;
+        
       } catch (error: any) {
-        console.error(`❌ PNCP: Erro na tentativa ${tentativa} - modalidade ${params.modalidadeId}:`, error.message);
+        if (error.message?.includes('Timeout')) {
+          console.warn(`⏱️ PNCP: Timeout (${this.REQUEST_TIMEOUT}ms) - modalidade ${params.modalidadeId}, página ${params.pagina}, tentativa ${tentativa}`);
+        } else {
+          console.error(`❌ PNCP: Erro na tentativa ${tentativa} - modalidade ${params.modalidadeId}:`, error.message);
+        }
         
         if (tentativa < maxRetries) {
           const delay = Math.pow(2, tentativa) * 1000; // Backoff exponencial
@@ -298,6 +330,7 @@ class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
     }
     
     console.error(`💥 PNCP: Falha após ${maxRetries} tentativas - modalidade ${params.modalidadeId}, página ${params.pagina}`);
+    console.log(`🔍 [DEBUG] Retornando null para modalidade ${params.modalidadeId}`);
     return null;
   }
 
@@ -324,13 +357,16 @@ class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
       const url = `https://pncp.gov.br/api/pncp/v1/orgaos/${cnpj}/compras/${ano}/${sequencial}/itens`;
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos para itens
+      const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT); // Timeout padronizado
       
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'Alicit-Bot/1.0',
-          'Accept': 'application/json'
+          'User-Agent': 'Alicit-Integration/2.0 (Sistema de Análise de Licitações)',
+          'Accept': 'application/json',
+          'Accept-Language': 'pt-BR',
+          'Connection': 'keep-alive',
+          'Cache-Control': 'no-cache'
         }
       });
       
@@ -345,6 +381,86 @@ class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
     }
   }
 
+  // 🎯 MÉTODO ALINHADO COM DOCUMENTAÇÃO OFICIAL PNCP
+  private async fetchPageLikeMigration(baseUrl: string, params: PNCPSearchParams, pagina: number) {
+    const queryParams = new URLSearchParams({
+      dataInicial: params.dataInicial!,
+      dataFinal: params.dataFinal!,
+      codigoModalidadeContratacao: params.modalidadeId.toString(),
+      pagina: pagina.toString()
+    });
+    
+    const fullUrl = `${baseUrl}?${queryParams}`;
+    
+    // 🕰️ DELAY AUMENTADO conforme instabilidade observada da API PNCP
+    await new Promise(resolve => setTimeout(resolve, 2000)); // 2s entre requests
+    
+    try {
+      // ⏱️ TIMEOUT 60s (igual ao migration)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error(`Timeout de 60s na página ${pagina}`)), 60000);
+      });
+      
+      const fetchPromise = fetch(fullUrl, {
+        headers: {
+          'User-Agent': 'Alicit-Integration/2.0 (Sistema de Análise de Licitações)',
+          'Accept': 'application/json',
+          'Accept-Language': 'pt-BR',
+          'Connection': 'keep-alive',
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
+      
+      // 📊 TRATAR CÓDIGOS DE RETORNO OFICIAIS PNCP
+      if (response.status === 204) {
+        console.log(`📄 PNCP: Sem conteúdo (204) - página ${pagina}`);
+        return null;
+      }
+      
+      if (response.status === 400) {
+        console.warn(`⚠️ PNCP: Bad Request (400) - página ${pagina}`);
+        return null;
+      }
+      
+      if (response.status === 422) {
+        console.warn(`⚠️ PNCP: Unprocessable Entity (422) - página ${pagina}`);
+        return null;
+      }
+      
+      if (response.status === 500) {
+        console.warn(`⚠️ PNCP: Internal Server Error (500) - página ${pagina}`);
+        return null;
+      }
+      
+      if (!response.ok) {
+        console.warn(`⚠️ PNCP: HTTP ${response.status} - página ${pagina}`);
+        return null;
+      }
+
+      const text = await response.text();
+      
+      if (!text.trim()) {
+        console.warn(`⚠️ PNCP: Resposta vazia - página ${pagina}`);
+        return null;
+      }
+
+      const parsed = JSON.parse(text);
+      
+      // 📊 VALIDAR ESTRUTURA CONFORME DOCUMENTAÇÃO
+      if (!parsed.data && parsed.totalRegistros === undefined) {
+        console.warn(`⚠️ PNCP: Estrutura inválida - página ${pagina}`);
+        return null;
+      }
+      
+      return parsed;
+    } catch (error) {
+      console.error(`❌ PNCP: Erro página ${pagina}:`, error);
+      return null;
+    }
+  }
+
   private converterParaPadrao(licitacao: PNCPLicitacao): LicitacaoStandard {
     return licitacao as LicitacaoStandard;
   }
@@ -354,13 +470,16 @@ class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
       const url = `https://pncp.gov.br/api/pncp/v1/orgaos/${cnpj}/compras/${ano}/${sequencial}/arquivos`;
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 segundos para documentos
+      const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT); // Timeout padronizado
       
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'Alicit-Bot/1.0',
-          'Accept': 'application/json'
+          'User-Agent': 'Alicit-Integration/2.0 (Sistema de Análise de Licitações)',
+          'Accept': 'application/json',
+          'Accept-Language': 'pt-BR',
+          'Connection': 'keep-alive',
+          'Cache-Control': 'no-cache'
         }
       });
       
@@ -371,7 +490,7 @@ class PNCPLicitacaoAdapter implements ILicitacaoAdapter {
       const data = await response.json();
       return data.map((doc: any) => doc.url);
       
-    } catch (error: any) {
+      } catch (error: any) {
       if (error.name === 'AbortError') {
         console.warn(`⏱️ PNCP: Timeout ao buscar documentos - ${cnpj}/${ano}/${sequencial}`);
       }
