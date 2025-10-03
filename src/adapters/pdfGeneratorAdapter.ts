@@ -106,330 +106,39 @@ export class PDFGeneratorAdapter {
     // Extrair dados estruturados do relatório final
     const executiveData = this.extractExecutiveData(data.finalReport);
     
-    // Convertendo logo para base64
-    const logoPath = path.join(__dirname, '../../../public/logo192.png');
-    let logoBase64 = '';
+    // Logo otimizada - usar URL externa ao invés de base64 para economizar espaço
+    const logoUrl = 'https://via.placeholder.com/120x40/ff6b35/ffffff?text=ALICIT';
     
-    try {
-      if (fs.existsSync(logoPath)) {
-        const logoBuffer = fs.readFileSync(logoPath);
-        logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
-      }
-    } catch (error) {
-      console.warn('⚠️ Logo não encontrada, continuando sem logo');
-    }
+    console.log('🔧 Gerando HTML otimizado para reduzir tamanho...');
     
-    return `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório Executivo - ${data.licitacaoId}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #fff;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
-            color: white;
-            padding: 40px;
-            margin-bottom: 30px;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
-        }
-        
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-            font-weight: bold;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header .subtitle {
-            font-size: 14px;
-            opacity: 0.9;
-            margin-top: 10px;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .info-card {
-            background: #fff8f5;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #ff6b35;
-            border: 1px solid #ffe4dc;
-        }
-        
-        .info-card h3 {
-            color: #c63d00;
-            font-size: 14px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-        
-        .info-card p {
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .section {
-            margin-bottom: 40px;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .section-header {
-            background: #ff6b35;
-            color: white;
-            padding: 15px 20px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        
-        .section-content {
-            padding: 25px;
-            line-height: 1.8;
-        }
-        
-        .exec-decision {
-            background: ${executiveData.decision === 'PROSSEGUIR' ? '#d1fae5' : '#fee2e2'};
-            border: 2px solid ${executiveData.decision === 'PROSSEGUIR' ? '#10b981' : '#ef4444'};
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .exec-score {
-            font-size: 32px;
-            font-weight: bold;
-            color: ${executiveData.decision === 'PROSSEGUIR' ? '#065f46' : '#991b1b'};
-        }
-        
-        .exec-status {
-            font-size: 18px;
-            font-weight: bold;
-            color: ${executiveData.decision === 'PROSSEGUIR' ? '#065f46' : '#991b1b'};
-            margin-top: 10px;
-        }
-        
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .data-table th,
-        .data-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .data-table th {
-            background: #f9fafb;
-            font-weight: bold;
-            color: #374151;
-        }
-        
-        .data-table tr:hover {
-            background: #f9fafb;
-        }
-        
-        .highlight {
-            background: #fff4f0;
-            padding: 15px;
-            border-left: 4px solid #ff6b35;
-            margin: 20px 0;
-            border-radius: 4px;
-            border: 1px solid #ffe4dc;
-        }
-        
-        .page-break {
-            page-break-before: always;
-        }
-        
-        .footer {
-            margin-top: 40px;
-            padding: 20px;
-            background: #fff8f5;
-            border-radius: 8px;
-            text-align: center;
-            color: #666;
-            font-size: 12px;
-            border: 1px solid #ffe4dc;
-        }
-        
-        @media print {
-            .container {
-                max-width: none;
-                margin: 0;
-                padding: 0;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            ${logoBase64 ? `<img src="${logoBase64}" alt="Alicit Logo" style="height: 60px; margin-bottom: 20px;">` : ''}
-            <h1>RELATÓRIO EXECUTIVO DE LICITAÇÃO</h1>
-            <div class="subtitle">Análise para Tomada de Decisão - ALICIT</div>
-        </div>
-        
-        <!-- 1. SUMÁRIO EXECUTIVO -->
-        <div class="section">
-            <div class="section-header">
-                🎯 SUMÁRIO EXECUTIVO
-            </div>
-            <div class="section-content">
-                <div class="exec-decision">
-                    <div class="exec-score">${executiveData.score}/100</div>
-                    <div class="exec-status">${executiveData.decision}</div>
-                </div>
-                
-                <div class="info-grid">
-                    <div class="info-card">
-                        <h3>Licitação</h3>
-                        <p>${data.licitacaoId}</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Empresa</h3>
-                        <p>${data.empresa}</p>
-                    </div>
-                </div>
-                
-                <div class="highlight">
-                    <strong>Recomendação:</strong> ${executiveData.recommendation}
-                </div>
-            </div>
-        </div>
-        
-        <!-- 2. DADOS CONCRETOS DA LICITAÇÃO -->
-        <div class="section">
-            <div class="section-header">
-                📊 DADOS CONCRETOS DA LICITAÇÃO
-            </div>
-            <div class="section-content">
-                <table class="data-table">
-                    <tr>
-                        <th>Valor Estimado</th>
-                        <td>${executiveData.concreteData.valorEstimado}</td>
-                    </tr>
-                    <tr>
-                        <th>Modalidade</th>
-                        <td>${executiveData.concreteData.modalidade}</td>
-                    </tr>
-                    <tr>
-                        <th>Prazo de Execução</th>
-                        <td>${executiveData.concreteData.prazoExecucao}</td>
-                    </tr>
-                    <tr>
-                        <th>Critério de Julgamento</th>
-                        <td>${executiveData.concreteData.criterioJulgamento}</td>
-                    </tr>
-                    <tr>
-                        <th>Órgão Licitante</th>
-                        <td>${executiveData.concreteData.orgao}</td>
-                    </tr>
-                    <tr>
-                        <th>Local de Entrega</th>
-                        <td>${executiveData.concreteData.localEntrega}</td>
-                    </tr>
-                </table>
-                
-                ${this.generateItemsTable(executiveData)}
-                
-                ${this.generateDocumentsTable(executiveData)}
-            </div>
-        </div>
-        
-        <!-- 3. AVALIAÇÃO ESPECIALIZADA -->
-        <div class="section page-break">
-            <div class="section-header">
-                🔬 AVALIAÇÃO ESPECIALIZADA
-            </div>
-            <div class="section-content">
-                <div class="info-grid">
-                    <div class="info-card">
-                        <h3>Estratégico</h3>
-                        <p>${executiveData.agentScores.strategic}/100</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Operacional</h3>
-                        <p>${executiveData.agentScores.operational}/100</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Jurídico</h3>
-                        <p>${executiveData.agentScores.legal}/100</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>Nível de Risco</h3>
-                        <p>${executiveData.riskLevel}</p>
-                    </div>
-                </div>
-                
-                ${this.generateAgentAnalysis(executiveData)}
-            </div>
-        </div>
-        
-        <!-- 4. PLANO DE AÇÃO -->
-        <div class="section">
-            <div class="section-header">
-                📋 PLANO DE AÇÃO
-            </div>
-            <div class="section-content">
-                ${this.generateActionPlan(executiveData)}
-                
-                <div class="highlight">
-                    <strong>Próximos passos recomendados:</strong>
-                    <ul>
-                        ${executiveData.decision === 'PROSSEGUIR' ? 
-                          '<li>Iniciar preparação da documentação de habilitação</li><li>Validar capacidade técnica e operacional</li><li>Elaborar proposta comercial competitiva</li>' :
-                          '<li>Analisar oportunidades similares mais alinhadas</li><li>Revisar estratégia de portfólio</li><li>Aguardar próximas licitações</li>'
-                        }
-                    </ul>
-                </div>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p><strong>Relatório Executivo ALICIT</strong> | Gerado em ${data.dataAnalise}</p>
-            <p>© ${new Date().getFullYear()} - <span style="color: #ff6b35; font-weight: bold;">ALICIT</span> - Análise Inteligente de Licitações</p>
-        </div>
-    </div>
-</body>
-</html>
-    `;
+    // Otimizar HTML e aplicar compressão
+    const rawHTML = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório - ${data.licitacaoId}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;line-height:1.4;color:#333;background:#fff}.container{max-width:800px;margin:0 auto;padding:15px}.header{background:#ff6b35;color:white;padding:25px;margin-bottom:20px;border-radius:8px;text-align:center}.header h1{font-size:24px;margin-bottom:5px;font-weight:bold}.header .subtitle{font-size:12px;opacity:0.9}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px}.info-card{background:#fff8f5;padding:15px;border-radius:6px;border-left:3px solid #ff6b35}.info-card h3{color:#c63d00;font-size:12px;margin-bottom:5px;text-transform:uppercase;font-weight:bold}.info-card p{font-size:14px;font-weight:bold}.section{margin-bottom:25px;background:white;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb}.section-header{background:#ff6b35;color:white;padding:10px 15px;font-size:16px;font-weight:bold}.section-content{padding:15px;line-height:1.6}.exec-decision{background:${executiveData.decision === 'PROSSEGUIR' ? '#d1fae5' : '#fee2e2'};border:2px solid ${executiveData.decision === 'PROSSEGUIR' ? '#10b981' : '#ef4444'};padding:15px;border-radius:6px;text-align:center;margin-bottom:15px}.exec-score{font-size:28px;font-weight:bold;color:${executiveData.decision === 'PROSSEGUIR' ? '#065f46' : '#991b1b'}}.exec-status{font-size:16px;font-weight:bold;color:${executiveData.decision === 'PROSSEGUIR' ? '#065f46' : '#991b1b'};margin-top:8px}.data-table{width:100%;border-collapse:collapse;margin:15px 0;border:1px solid #e5e7eb}.data-table th,.data-table td{padding:8px;text-align:left;border-bottom:1px solid #e5e7eb;font-size:12px}.data-table th{background:#f9fafb;font-weight:bold}.highlight{background:#fff4f0;padding:10px;border-left:3px solid #ff6b35;margin:15px 0;border-radius:3px}.footer{margin-top:25px;padding:15px;background:#fff8f5;border-radius:6px;text-align:center;color:#666;font-size:10px}@media print{.container{max-width:none;margin:0;padding:0}}</style></head>
+<body><div class="container"><div class="header"><img src="${logoUrl}" alt="ALICIT" style="height:40px;margin-bottom:10px;"><h1>RELATÓRIO EXECUTIVO</h1><div class="subtitle">Análise Automatizada - ALICIT</div></div>
+<div class="section"><div class="section-header">SUMÁRIO EXECUTIVO</div><div class="section-content"><div class="exec-decision"><div class="exec-score">${executiveData.score}/100</div><div class="exec-status">${executiveData.decision}</div></div><div class="info-grid"><div class="info-card"><h3>Licitação</h3><p>${data.licitacaoId.substring(0, 25)}...</p></div><div class="info-card"><h3>Empresa</h3><p>${data.empresa.substring(0, 20)}...</p></div></div><div class="highlight"><strong>Recomendação:</strong> ${executiveData.recommendation.substring(0, 150)}...</div></div></div>
+<div class="section"><div class="section-header">DADOS DA LICITAÇÃO</div><div class="section-content"><table class="data-table"><tr><th>Valor</th><td>${executiveData.concreteData.valorEstimado}</td></tr><tr><th>Modalidade</th><td>${executiveData.concreteData.modalidade}</td></tr><tr><th>Prazo</th><td>${executiveData.concreteData.prazoExecucao}</td></tr><tr><th>Critério</th><td>${executiveData.concreteData.criterioJulgamento}</td></tr><tr><th>Órgão</th><td>${executiveData.concreteData.orgao.substring(0, 30)}...</td></tr></table>${this.generateOptimizedItemsTable(executiveData)}${this.generateOptimizedDocumentsTable(executiveData)}</div></div>
+<div class="section"><div class="section-header">AVALIAÇÃO</div><div class="section-content"><div class="info-grid"><div class="info-card"><h3>Estratégico</h3><p>${executiveData.agentScores.strategic}/100</p></div><div class="info-card"><h3>Operacional</h3><p>${executiveData.agentScores.operational}/100</p></div><div class="info-card"><h3>Jurídico</h3><p>${executiveData.agentScores.legal}/100</p></div><div class="info-card"><h3>Risco</h3><p>${executiveData.riskLevel}</p></div></div>${this.generateOptimizedAgentAnalysis(executiveData)}</div></div>
+<div class="section"><div class="section-header">PLANO DE AÇÃO</div><div class="section-content">${this.generateOptimizedActionPlan(executiveData)}<div class="highlight"><strong>Próximos passos:</strong>${executiveData.decision === 'PROSSEGUIR' ? '<ul><li>Preparar documentação</li><li>Validar capacidade</li><li>Elaborar proposta</li></ul>' : '<ul><li>Buscar oportunidades alinhadas</li><li>Revisar estratégia</li></ul>'}</div></div></div><div class="footer"><p><strong>ALICIT</strong> | ${data.dataAnalise}</p><p>© ${new Date().getFullYear()} - Análise Inteligente</p></div></div></body></html>`;
+    
+    // Aplicar otimizações finais
+    return this.optimizeHTML(rawHTML);
+  }
+
+  // Método para otimizar HTML final
+  private optimizeHTML(html: string): string {
+    const optimized = html
+      .replace(/\s{2,}/g, ' ')              // Remove espaços extras
+      .replace(/\n\s*\n/g, '\n')           // Remove linhas vazias
+      .replace(/>\s+</g, '><')             // Remove espaços entre tags
+      .replace(/<!--[\s\S]*?-->/g, '')     // Remove comentários HTML
+      .replace(/\s+/g, ' ')               // Normaliza espaços
+      .trim();
+    
+    const originalSize = html.length;
+    const optimizedSize = optimized.length;
+    const reduction = ((originalSize - optimizedSize) / originalSize * 100).toFixed(1);
+    
+    console.log(`📊 HTML otimizado: ${originalSize} → ${optimizedSize} bytes (${reduction}% redução)`);
+    return optimized;
   }
 
   private formatMarkdownToHTML(markdown: string): string {
@@ -705,97 +414,66 @@ export class PDFGeneratorAdapter {
     return documents;
   }
 
-  private generateItemsTable(executiveData: any): string {
+  // Versão otimizada da tabela de itens
+  private generateOptimizedItemsTable(executiveData: any): string {
     if (!executiveData.items || executiveData.items.length === 0) {
-      return '<p><em>Itens específicos não identificados no edital.</em></p>';
+      return '<p><em>Itens não identificados.</em></p>';
     }
     
-    return `
-      <h4>Itens da Licitação</h4>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Quantidade</th>
-            <th>Valor Unitário Est.</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${executiveData.items.map((item: any) => `
-            <tr>
-              <td>${item.nome}</td>
-              <td>${item.quantidade}</td>
-              <td>${item.valorUnitario}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+    // Limitar a 3 itens principais para economizar espaço
+    const topItems = executiveData.items.slice(0, 3);
+    
+    return `<h4>Principais Itens</h4><table class="data-table"><tr><th>Item</th><th>Qtd</th><th>Valor</th></tr>${topItems.map((item: any) => `<tr><td>${item.nome.substring(0, 25)}...</td><td>${item.quantidade}</td><td>${item.valorUnitario}</td></tr>`).join('')}</table>`;
+  }
+
+  private generateItemsTable(executiveData: any): string {
+    return this.generateOptimizedItemsTable(executiveData);
+  }
+
+  // Versão otimizada da tabela de documentos
+  private generateOptimizedDocumentsTable(executiveData: any): string {
+    if (!executiveData.documents || executiveData.documents.length === 0) {
+      return '<p><em>Docs não especificados.</em></p>';
+    }
+    
+    // Agrupar por tipo e limitar quantidade
+    const docsByType = executiveData.documents.reduce((acc: any, doc: any) => {
+      if (!acc[doc.tipo]) acc[doc.tipo] = [];
+      acc[doc.tipo].push(doc.documento);
+      return acc;
+    }, {});
+    
+    const summary = Object.entries(docsByType).slice(0, 4).map(([tipo, docs]: [string, any]) => 
+      `<tr><td>${tipo}</td><td>${(docs as string[]).length} documento(s)</td></tr>`
+    ).join('');
+    
+    return `<h4>Documentos</h4><table class="data-table"><tr><th>Categoria</th><th>Quantidade</th></tr>${summary}</table>`;
   }
 
   private generateDocumentsTable(executiveData: any): string {
-    if (!executiveData.documents || executiveData.documents.length === 0) {
-      return '<p><em>Documentos de habilitação não especificados.</em></p>';
-    }
-    
-    return `
-      <h4>Documentos Necessários</h4>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Categoria</th>
-            <th>Documento</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${executiveData.documents.map((doc: any) => `
-            <tr>
-              <td>${doc.tipo}</td>
-              <td>${doc.documento}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+    return this.generateOptimizedDocumentsTable(executiveData);
+  }
+
+  // Versão otimizada da análise de agentes
+  private generateOptimizedAgentAnalysis(executiveData: any): string {
+    return `<div class="highlight"><h4>Resumo</h4><p><strong>Estratégico:</strong> ${executiveData.agentScores.strategic}/100</p><p><strong>Operacional:</strong> ${executiveData.agentScores.operational}/100</p><p><strong>Jurídico:</strong> ${executiveData.agentScores.legal}/100</p></div>`;
   }
 
   private generateAgentAnalysis(executiveData: any): string {
-    return `
-      <div class="highlight">
-        <h4>Resumo das Avaliações</h4>
-        <p><strong>Estratégico:</strong> ${executiveData.agentScores.strategic}/100 - Compatibilidade com core business da empresa</p>
-        <p><strong>Operacional:</strong> ${executiveData.agentScores.operational}/100 - Viabilidade técnica e logística</p>
-        <p><strong>Jurídico:</strong> ${executiveData.agentScores.legal}/100 - Conformidade documental e riscos</p>
-      </div>
-    `;
+    return this.generateOptimizedAgentAnalysis(executiveData);
+  }
+
+  // Versão otimizada do plano de ação
+  private generateOptimizedActionPlan(executiveData: any): string {
+    if (executiveData.decision === 'PROSSEGUIR') {
+      return `<h4>Estratégia</h4><p>Recomendamos prosseguir com a participação.</p><h4>Cronograma</h4><ul><li>Imediato: Preparação documental</li><li>Curto prazo: Validação operacional</li><li>Médio prazo: Proposta comercial</li></ul>`;
+    } else {
+      return `<h4>Não Participar</h4><p>Riscos identificados superam oportunidades.</p><h4>Alternativas</h4><ul><li>Buscar oportunidades alinhadas</li><li>Desenvolver capacidades</li><li>Monitorar futuras licitações</li></ul>`;
+    }
   }
 
   private generateActionPlan(executiveData: any): string {
-    if (executiveData.decision === 'PROSSEGUIR') {
-      return `
-        <h4>Estratégia Recomendada</h4>
-        <p>Com base na análise, recomendamos prosseguir com a participação nesta licitação. Os pontos de atenção identificados são gerenciáveis.</p>
-        
-        <h4>Cronograma Sugerido</h4>
-        <ul>
-          <li><strong>Imediato:</strong> Iniciar preparação documental</li>
-          <li><strong>Curto prazo:</strong> Validar capacidade operacional</li>
-          <li><strong>Médio prazo:</strong> Elaborar proposta comercial</li>
-        </ul>
-      `;
-    } else {
-      return `
-        <h4>Razões para Não Participar</h4>
-        <p>A análise identificou riscos ou incompatibilidades que tornam a participação não recomendada no momento.</p>
-        
-        <h4>Alternativas Sugeridas</h4>
-        <ul>
-          <li>Buscar oportunidades mais alinhadas ao perfil</li>
-          <li>Desenvolver capacidades identificadas como deficitárias</li>
-          <li>Monitorar futuras licitações similares</li>
-        </ul>
-      `;
-    }
+    return this.generateOptimizedActionPlan(executiveData);
   }
 
   async listReports(): Promise<string[]> {

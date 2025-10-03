@@ -1,3 +1,14 @@
+export interface EmpresaProduto {
+    id?: number;
+    empresa_id: number;
+    nome: string;
+    descricao?: string;
+    valor?: number;
+    tipo: 'produto' | 'servico';
+    created_at?: Date;
+    updated_at?: Date;
+}
+
 export interface EmpresaContext {
     // Dados Básicos
     nome: string;
@@ -6,7 +17,7 @@ export interface EmpresaContext {
     porte: "Pequeno" | "Médio" | "Grande";
     descricao: string;
     
-    // Core Business - Dados estruturados
+    // Core Business - Dados estruturados (mantém compatibilidade)
     produtos: string[];
     servicos: string[];
     palavrasChave: string;

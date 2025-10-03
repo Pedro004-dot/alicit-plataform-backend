@@ -151,15 +151,11 @@ const generateEmpresaEmbedding = async (empresaPerfil: EmpresaPerfil): Promise<n
     
     // 2. DESCRIÇÃO - Descrição detalhada do negócio
     empresaPerfil.descricao || '',
-    
-    // 3. PALAVRAS-CHAVE - Keywords específicas
-    empresaPerfil.palavrasChave || '',
+
     
     // 4. PRODUTOS DETALHADOS - Lista completa de produtos
     empresaPerfil.produtos?.length ? empresaPerfil.produtos.join(', ') : '',
-    
-    // 5. SERVIÇOS DETALHADOS - Lista completa de serviços
-    empresaPerfil.servicos?.length ? empresaPerfil.servicos.join(', ') : ''
+  
     
   ].filter(text => text && text.trim().length > 0).join('. ');
 
@@ -168,7 +164,7 @@ const generateEmpresaEmbedding = async (empresaPerfil: EmpresaPerfil): Promise<n
     console.error('Dados recebidos:', JSON.stringify({
       razaoSocial: empresaPerfil.razaoSocial,
       descricao: empresaPerfil.descricao,
-      palavrasChave: empresaPerfil.palavrasChave,
+      
       produtos: empresaPerfil.produtos?.length || 0,
       servicos: empresaPerfil.servicos?.length || 0
     }, null, 2));

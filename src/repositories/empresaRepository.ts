@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { EmpresaInput } from '../controller/empresa/createEmpresaController';
+import { EmpresaProduto } from '../types/empresaTypes';
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
@@ -13,16 +14,14 @@ const createEmpresa = async (empresaData: EmpresaInput) => {
             razao_social: empresaData.razaoSocial,
             email: empresaData.email,
             telefone: empresaData.telefone,
-            cep: empresaData.CEP, // ✅ Usar CEP como está na interface
-            cidade: empresaData.cidades, // ✅ Usar cidades como está na interface
+            cep: empresaData.CEP,
+            cidade: empresaData.cidades,
             endereco: empresaData.endereco,
             descricao: empresaData.descricao,
             responsavel_legal: empresaData.responsavelLegal,
             raio_distancia: empresaData.raioDistancia,
             cidade_radar: empresaData.cidadeRadar,
-            porte: empresaData.porte,
-            palavras_chave: empresaData.palavrasChave,
-            produto_servico: empresaData.produtoServico
+            porte: empresaData.porte
         })
         .select()
         .single();
@@ -43,22 +42,69 @@ const createEmpresa = async (empresaData: EmpresaInput) => {
             });
     }
 
-    // ✅ Inserir produtos se fornecidos
-    if (empresaData.produtos && data.id) {
-        const produtosData = empresaData.produtos.map(produto => ({
-            empresa_id: data.id,
-            produto
-        }));
-        await supabase.from('empresa_produtos').insert(produtosData);
-    }
+    // ✅ Inserir produtos/serviços na nova tabela unificada
+    if (data.id) {
+        const produtosServicosData: any[] = [];
 
-    // ✅ Inserir serviços se fornecidos
-    if (empresaData.servicos && data.id) {
-        const servicosData = empresaData.servicos.map(servico => ({
-            empresa_id: data.id,
-            servico
-        }));
-        await supabase.from('empresa_servicos').insert(servicosData);
+        // Suporte ao novo formato unificado
+        if (empresaData.produtosServicos) {
+            produtosServicosData.push(...empresaData.produtosServicos.map(item => ({
+                empresa_id: data.id,
+                nome: item.nome,
+                descricao: item.descricao,
+                valor: item.valor,
+                tipo: item.tipo
+            })));
+        }
+
+        // Suporte ao formato legado de produtos (strings)
+        if (empresaData.produtos) {
+            const produtos = Array.isArray(empresaData.produtos) ? empresaData.produtos : [];
+            produtos.forEach(produto => {
+                if (typeof produto === 'string') {
+                    produtosServicosData.push({
+                        empresa_id: data.id,
+                        nome: produto,
+                        tipo: 'produto' as const
+                    });
+                } else {
+                    produtosServicosData.push({
+                        empresa_id: data.id,
+                        nome: produto.nome,
+                        descricao: produto.descricao,
+                        valor: produto.valor,
+                        tipo: 'produto' as const
+                    });
+                }
+            });
+        }
+
+        // Suporte ao formato legado de serviços (strings)
+        if (empresaData.servicos) {
+            const servicos = Array.isArray(empresaData.servicos) ? empresaData.servicos : [];
+            servicos.forEach(servico => {
+                if (typeof servico === 'string') {
+                    produtosServicosData.push({
+                        empresa_id: data.id,
+                        nome: servico,
+                        tipo: 'servico' as const
+                    });
+                } else {
+                    produtosServicosData.push({
+                        empresa_id: data.id,
+                        nome: servico.nome,
+                        descricao: servico.descricao,
+                        valor: servico.valor,
+                        tipo: 'servico' as const
+                    });
+                }
+            });
+        }
+
+        // Inserir todos os produtos/serviços de uma vez
+        if (produtosServicosData.length > 0) {
+            await supabase.from('empresas_produtos').insert(produtosServicosData);
+        }
     }
 
     // ✅ Inserir documentos se fornecidos
@@ -79,8 +125,7 @@ const getAllEmpresas = async () => {
         .select(`
             *,
             dados_bancarios(*),
-            empresa_produtos(produto),
-            empresa_servicos(servico),
+            empresas_produtos(nome, tipo, descricao, valor),
             empresa_documentos(*)
         `);
     
@@ -88,26 +133,39 @@ const getAllEmpresas = async () => {
     return data;
 };
 
-// Função para buscar produtos de uma empresa
-const getProdutosByEmpresaId = async (empresaId: string) => {
+// Função unificada para buscar produtos de uma empresa
+const getProdutosByEmpresaId = async (empresaId: string): Promise<EmpresaProduto[]> => {
     const { data, error } = await supabase
-        .from('empresa_produtos')
-        .select('produto')
-        .eq('empresa_id', empresaId);
+        .from('empresas_produtos')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .eq('tipo', 'produto');
     
     if (error) throw error;
-    return data;
+    return data || [];
 };
 
-// Função para buscar serviços de uma empresa
-const getServicosByEmpresaId = async (empresaId: string) => {
+// Função unificada para buscar serviços de uma empresa
+const getServicosByEmpresaId = async (empresaId: string): Promise<EmpresaProduto[]> => {
     const { data, error } = await supabase
-        .from('empresa_servicos')
-        .select('servico')
+        .from('empresas_produtos')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .eq('tipo', 'servico');
+    
+    if (error) throw error;
+    return data || [];
+};
+
+// Nova função para buscar todos os produtos/serviços de uma empresa
+const getProdutosServicosByEmpresaId = async (empresaId: string): Promise<EmpresaProduto[]> => {
+    const { data, error } = await supabase
+        .from('empresas_produtos')
+        .select('*')
         .eq('empresa_id', empresaId);
     
     if (error) throw error;
-    return data;
+    return data || [];
 };
 
 const getEmpresaById = async (id: string) => {
@@ -156,8 +214,7 @@ const getEmpresaByCnpj = async (cnpj: string) => {
           banco,
           tipo_conta
         ),
-        empresa_produtos(produto),
-        empresa_servicos(servico),
+        empresas_produtos(nome, tipo, descricao, valor),
         empresa_documentos(
           nome_documento,
           descricao,
@@ -201,8 +258,6 @@ const updateEmpresa = async (id: string, empresaData: Partial<EmpresaInput>) => 
             raio_distancia: empresaData.raioDistancia,
             cidade_radar: empresaData.cidadeRadar,
             porte: empresaData.porte,
-            palavras_chave: empresaData.palavrasChave,
-            produto_servico: empresaData.produtoServico,
             updated_at: new Date().toISOString()
         })
         .eq('cnpj', id)
@@ -210,6 +265,29 @@ const updateEmpresa = async (id: string, empresaData: Partial<EmpresaInput>) => 
         .single();
 
     if (error) throw error;
+
+    // ✅ Atualizar produtos/serviços se fornecidos
+    if (empresaData.produtosServicos && data.id) {
+        // Primeiro, deletar produtos/serviços existentes
+        await supabase
+            .from('empresas_produtos')
+            .delete()
+            .eq('empresa_id', data.id);
+
+        // Depois, inserir os novos produtos/serviços
+        if (empresaData.produtosServicos.length > 0) {
+            const produtosServicosData = empresaData.produtosServicos.map(item => ({
+                empresa_id: data.id,
+                nome: item.nome,
+                descricao: item.descricao,
+                valor: item.valor,
+                tipo: item.tipo
+            }));
+
+            await supabase.from('empresas_produtos').insert(produtosServicosData);
+        }
+    }
+
     return data;
 };
 
@@ -488,6 +566,7 @@ export default {
     getAllEmpresas,
     getProdutosByEmpresaId,
     getServicosByEmpresaId,
+    getProdutosServicosByEmpresaId,
     getEmpresaById,
     getEmpresaByCnpj,
     updateEmpresa,

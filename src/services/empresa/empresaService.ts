@@ -28,8 +28,8 @@ class EmpresaService {
           const perfil = await this.montarPerfilEmpresa(empresa);
     
           const temDadosMinimos = perfil.termosInteresse.length > 0 || 
-                                 (perfil.razaoSocial && perfil.descricao) || 
-                                 perfil.palavrasChave;
+                                 (perfil.razaoSocial && perfil.descricao) ;
+                                 
           
         if (temDadosMinimos) {
             empresasParaMatching.push({
@@ -73,8 +73,7 @@ class EmpresaService {
       
       // === NEGÓCIO ===
       descricao: empresa.descricao,
-      produtoServico: empresa.produto_servico,
-      palavrasChave: empresa.palavras_chave,
+      produtos: empresa.produtos,
       porte: empresa.porte,
       
       // === CONTATO ===
@@ -86,24 +85,24 @@ class EmpresaService {
       termosInteresse: []
     };
 
-    // Buscar produtos da empresa
+    // Buscar produtos da empresa (nova estrutura unificada)
     try {
       const produtos = await empresaRepository.getProdutosByEmpresaId(empresa.id);
       if (produtos && produtos.length > 0) {
-        perfil.produtos = produtos.map((p: any) => p.produto);
-        perfil.termosInteresse.push(...produtos.map((p: any) => p.produto));
+        perfil.produtos = produtos.map((p: any) => p.nome);
+        perfil.termosInteresse.push(...produtos.map((p: any) => p.nome));
         console.log(`📦 ${produtos.length} produtos adicionados aos termos de interesse`);
       }
     } catch (error) {
       console.error(`⚠️ Erro ao buscar produtos da empresa ${empresa.nome}:`, error);
     }
 
-    // Buscar serviços da empresa
+    // Buscar serviços da empresa (nova estrutura unificada)
     try {
       const servicos = await empresaRepository.getServicosByEmpresaId(empresa.id);
       if (servicos && servicos.length > 0) {
-        perfil.servicos = servicos.map((s: any) => s.servico);
-        perfil.termosInteresse.push(...servicos.map((s: any) => s.servico));
+        perfil.servicos = servicos.map((s: any) => s.nome);
+        perfil.termosInteresse.push(...servicos.map((s: any) => s.nome));
         console.log(`🔧 ${servicos.length} serviços adicionados aos termos de interesse`);
       }
     } catch (error) {

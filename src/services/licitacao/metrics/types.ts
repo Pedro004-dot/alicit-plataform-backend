@@ -16,13 +16,18 @@ export interface EmpresaPerfil {
   
   // === NEGÓCIO ===
   descricao?: string;
-  produtoServico?: string;
-  palavrasChave?: string;
   porte?: string[] | string;
   
   // === PRODUTOS E SERVIÇOS ===
   produtos?: string[];
   servicos?: string[];
+  produtosServicos?: Array<{
+    id?: string;
+    nome: string;
+    descricao?: string;
+    valor?: number;
+    tipo: 'produto' | 'servico';
+  }>;
   
   // === CONTATO ===
   email?: string;

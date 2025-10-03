@@ -15,6 +15,13 @@ export interface DadosBancariosInput {
     tipoConta?: string;
 }
 
+export interface ProdutoServicoInput {
+    nome: string;
+    descricao?: string;
+    valor?: number;
+    tipo: 'produto' | 'servico';
+}
+
 export interface EmpresaInput {
     nome: string;
     cnpj: string;
@@ -25,14 +32,13 @@ export interface EmpresaInput {
     descricao: string;
     razaoSocial: string;
     responsavelLegal?: string;
-    palavrasChave: string;
-    produtoServico: string;
     documentos?: DocumentoInput[];
-    produtos?: string[];
-    servicos?: string[];
+    produtos?: string[] | ProdutoServicoInput[];
+    servicos?: string[] | ProdutoServicoInput[];
+    produtosServicos?: ProdutoServicoInput[];
     cidades?: string;
     cidadeRadar?: string;
-    dadosBancarios: DadosBancariosInput; // ✅ Tornar obrigatório
+    dadosBancarios: DadosBancariosInput;
     raioDistancia?: number;
     porte?: string[];
 }
@@ -45,8 +51,8 @@ const createEmpresa = async (req: Request, res: Response) => {
     // ✅ Validação completa incluindo dados bancários
     if(!empresaInput.nome || !empresaInput.cnpj || !empresaInput.razaoSocial || 
        !empresaInput.endereco || !empresaInput.email || !empresaInput.telefone || 
-       !empresaInput.CEP || !empresaInput.descricao || !empresaInput.palavrasChave || 
-       !empresaInput.produtoServico || !empresaInput.dadosBancarios?.agencia || 
+       !empresaInput.CEP || !empresaInput.descricao || 
+       !empresaInput.dadosBancarios?.agencia || 
        !empresaInput.dadosBancarios?.numeroConta || !empresaInput.dadosBancarios?.nomeTitular) {
         return res.status(400).json({ error: "Dados obrigatórios não informados" });
     }
