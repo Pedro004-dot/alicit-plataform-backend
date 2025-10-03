@@ -1,7 +1,6 @@
 import pncpAdapter from '../../adapters/pncpAdapter';
-import pineconeCacheService from '../../repositories/pineconeLicitacaoRepository';
 import { RecursiveZipExtractor, ExtractedDocument, DocumentExtractionResult } from '../../adapters/recursiveZipExtractor';
-import pineconeLicitacaoRepository from '../../repositories/pineconeLicitacaoRepository';
+import supabaseLicitacaoRepository from '../../repositories/supabaseLicitacaoRepository';
 
 interface DownloadLicitacaoInput {
     numeroControlePNCP: string;
@@ -92,10 +91,10 @@ const downloadLicitacaoPNCP = async (pncpId: DownloadLicitacaoInput): Promise<Pr
     console.log(`📥 Iniciando download de documentos para ${pncpId.numeroControlePNCP}...`);
     const zipExtractor = new RecursiveZipExtractor();
     
-    // 1. Buscar dados da licitação no Redis
-    const licitacao = await pineconeLicitacaoRepository.getLicitacao(pncpId.numeroControlePNCP);
+    // 1. Buscar dados da licitação no Supabase
+    const licitacao = await supabaseLicitacaoRepository.getLicitacao(pncpId.numeroControlePNCP);
     if (!licitacao) {
-        throw new Error(`Licitação ${pncpId.numeroControlePNCP} não encontrada no Pinecone`);
+        throw new Error(`Licitação ${pncpId.numeroControlePNCP} não encontrada na base de dados`);
     }
     
     console.log(`📋 Licitação encontrada: ${licitacao.numeroControlePNCP}, ano ${licitacao.anoCompra}, sequencial ${licitacao.sequencialCompra}`);

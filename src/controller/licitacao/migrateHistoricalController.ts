@@ -41,9 +41,9 @@ const migrateHistorical = async (req: Request, res: Response) => {
     const params = {
       dataInicio,
       dataFim: dataFim || new Date().toISOString().slice(0, 10).replace(/-/g, ''),
-      modalidades: modalidades || [1, 2, 3, 4, 5, 6, 7, 8],
-      batchSizePaginas: batchSizePaginas || 10,
-      delayBetweenBatches: delayBetweenBatches || 1000
+      modalidades: modalidades || [6,8,9],
+      batchSizePaginas: batchSizePaginas || 5,
+      delayBetweenBatches: delayBetweenBatches || 500
     };
 
     console.log('🚀 Iniciando migração histórica via API...');

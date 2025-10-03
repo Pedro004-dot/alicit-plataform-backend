@@ -206,38 +206,118 @@ export class HistoricalLicitacaoMigrator {
   }
 
   private filterByDataEncerramento(licitacoes: any[]): any[] {
-    // 🎯 FILTRO SIMPLIFICADO: APENAS DATA DE ENCERRAMENTO
+    // 🎯 FILTRO DE DATA DE ENCERRAMENTO COM DEBUGGING DETALHADO
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0); // Reset horas para comparação correta
     
-    const licitacoesAtivas = licitacoes.filter(licitacao => {
+    console.log(`📅 [FILTRO DEBUG] Data de hoje para comparação: ${hoje.toISOString().split('T')[0]}`);
+    console.log(`📊 [FILTRO DEBUG] Analisando ${licitacoes.length} licitações...`);
+    
+    let semData = 0;
+    let ativas = 0;
+    let expiradas = 0;
+    let errosProcessamento = 0;
+    
+    const amostrasLog: any[] = [];
+    
+    const licitacoesAtivas = licitacoes.filter((licitacao, index) => {
       // VERIFICAR APENAS DATA DE ENCERRAMENTO
       const dataEncerramento = licitacao.dataEncerramentoProposta;
       
       // Se não tem data, considera ativa
-      if (!dataEncerramento) return true;
-      
-      // Converter para Date object para comparação correta
-      let dataEncerramentoObj: Date;
-      
-      if (dataEncerramento.length === 8) {
-        // YYYYMMDD
-        const ano = parseInt(dataEncerramento.slice(0, 4));
-        const mes = parseInt(dataEncerramento.slice(4, 6)) - 1; // Month 0-indexed
-        const dia = parseInt(dataEncerramento.slice(6, 8));
-        dataEncerramentoObj = new Date(ano, mes, dia);
-      } else if (dataEncerramento.includes('T')) {
-        // ISO format with time (YYYY-MM-DDTHH:mm:ss)
-        dataEncerramentoObj = new Date(dataEncerramento);
-      } else {
-        // YYYY-MM-DD
-        dataEncerramentoObj = new Date(dataEncerramento);
+      if (!dataEncerramento || dataEncerramento === '' || dataEncerramento === null) {
+        semData++;
+        if (amostrasLog.length < 3) {
+          amostrasLog.push({
+            id: licitacao.numeroControlePNCP || `licitacao-${index}`,
+            dataEncerramento: 'SEM_DATA',
+            status: 'ATIVA_SEM_DATA'
+          });
+        }
+        return true;
       }
       
-      return dataEncerramentoObj > hoje;
+      try {
+        // Converter para Date object para comparação correta
+        let dataEncerramentoObj: Date;
+        let formatoDetectado = '';
+        
+        if (typeof dataEncerramento === 'string' && dataEncerramento.length === 8 && /^\d{8}$/.test(dataEncerramento)) {
+          // YYYYMMDD
+          const ano = parseInt(dataEncerramento.slice(0, 4));
+          const mes = parseInt(dataEncerramento.slice(4, 6)) - 1; // Month 0-indexed
+          const dia = parseInt(dataEncerramento.slice(6, 8));
+          dataEncerramentoObj = new Date(ano, mes, dia);
+          formatoDetectado = 'YYYYMMDD';
+        } else if (typeof dataEncerramento === 'string' && dataEncerramento.includes('T')) {
+          // ISO format with time (YYYY-MM-DDTHH:mm:ss)
+          dataEncerramentoObj = new Date(dataEncerramento);
+          formatoDetectado = 'ISO_WITH_TIME';
+        } else if (typeof dataEncerramento === 'string' && dataEncerramento.includes('-')) {
+          // YYYY-MM-DD
+          dataEncerramentoObj = new Date(dataEncerramento);
+          formatoDetectado = 'YYYY-MM-DD';
+        } else {
+          // Tentar conversão direta
+          dataEncerramentoObj = new Date(dataEncerramento);
+          formatoDetectado = 'CONVERSAO_DIRETA';
+        }
+        
+        // Validar se a data foi convertida corretamente
+        if (isNaN(dataEncerramentoObj.getTime())) {
+          console.warn(`⚠️ [FILTRO] Data inválida detectada: "${dataEncerramento}" (formato: ${formatoDetectado})`);
+          errosProcessamento++;
+          return true; // Considera ativa em caso de erro
+        }
+        
+        const dataEncerramentoFormatada = dataEncerramentoObj.toISOString().split('T')[0];
+        const isAtiva = dataEncerramentoObj > hoje;
+        
+        if (isAtiva) {
+          ativas++;
+        } else {
+          expiradas++;
+        }
+        
+        // Coletar amostras para log (primeiras 5)
+        if (amostrasLog.length < 5) {
+          amostrasLog.push({
+            id: licitacao.numeroControlePNCP || `licitacao-${index}`,
+            dataOriginal: dataEncerramento,
+            formato: formatoDetectado,
+            dataProcessada: dataEncerramentoFormatada,
+            status: isAtiva ? 'ATIVA' : 'EXPIRADA',
+            diasRestantes: Math.ceil((dataEncerramentoObj.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
+          });
+        }
+        
+        return isAtiva;
+        
+      } catch (error) {
+        console.error(`❌ [FILTRO] Erro ao processar data "${dataEncerramento}":`, error);
+        errosProcessamento++;
+        return true; // Considera ativa em caso de erro
+      }
     });
     
-    // Log simplificado
+    // 📊 LOG DETALHADO DOS RESULTADOS
+    console.log(`📊 [FILTRO RESULTADO]:`);
+    console.log(`  ✅ Ativas: ${ativas}`);
+    console.log(`  ❌ Expiradas: ${expiradas}`);
+    console.log(`  ⚪ Sem data: ${semData}`);
+    console.log(`  🚫 Erros: ${errosProcessamento}`);
+    console.log(`  📈 Total aceitas: ${licitacoesAtivas.length}/${licitacoes.length}`);
+    
+    // 🔍 AMOSTRAS PARA DEBUGGING
+    if (amostrasLog.length > 0) {
+      console.log(`🔍 [FILTRO AMOSTRAS]:`);
+      amostrasLog.forEach((amostra, i) => {
+        console.log(`  ${i + 1}. ${amostra.id}:`);
+        console.log(`     Original: "${amostra.dataOriginal}" (${amostra.formato})`);
+        console.log(`     Processada: ${amostra.dataProcessada}`);
+        console.log(`     Status: ${amostra.status} (${amostra.diasRestantes} dias)`);
+      });
+    }
     
     return licitacoesAtivas;
   }
