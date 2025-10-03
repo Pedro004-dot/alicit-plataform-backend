@@ -6,6 +6,8 @@ import licitacaoEmpresaController from '../controller/licitacao/statusLicitacaoE
 import recomendacaoController from '../controller/licitacao/recomendacaoController';
 import dashboardController from '../controller/licitacao/dashboardController';
 import pineconeDiagnosticController from '../controller/licitacao/pineconeDiagnosticController';
+import syncDiagnosticController from '../controller/licitacao/syncDiagnosticController';
+import cleanupOrfasController from '../controller/licitacao/cleanupOrfasController';
 import getUniqueLicitacaoController from '../controller/licitacao/getUniqueLicitacaoController';
 import migrateHistoricalController from '../controller/licitacao/migrateHistoricalController';
 
@@ -30,6 +32,12 @@ router.get('/pinecone/index-stats', pineconeDiagnosticController.obterEstatistic
 router.get('/pinecone/samples', pineconeDiagnosticController.obterAmostrasRecords);
 router.get('/pinecone/metadata-structure', pineconeDiagnosticController.analisarEstruturaMetadata);
 router.get('/pinecone/full-structure', pineconeDiagnosticController.obterEstruturaCompleta);
+
+// diagnostico de sincronizacao Supabase vs Pinecone
+router.get('/sync/diagnostic', syncDiagnosticController.diagnosticarSincronizacao);
+
+// limpeza de licitacoes orfas (dessincronizadas)
+router.delete('/sync/cleanup-orfas', cleanupOrfasController.apagarLicitacoesOrfas);
 
 // rotas de dashboard (DEVEM VIR ANTES das rotas /empresa para evitar conflitos)
 router.get('/:cnpj/dashboard', dashboardController.getDashboardData);

@@ -327,6 +327,51 @@ class PineconeRepository {
         // Pinecone não requer fechamento de conexão
         console.log('✅ PineconeRepository fechado');
     }
+    // Métodos para limpeza de dados
+    async deleteAll() {
+        try {
+            const index = this.pinecone.index(this.indexName);
+            await index.deleteAll();
+            console.log('✅ Todos os vetores foram deletados do Pinecone');
+        }
+        catch (error) {
+            console.error('❌ Erro ao deletar todos os vetores:', error);
+            throw error;
+        }
+    }
+    async deleteByIds(ids) {
+        try {
+            const index = this.pinecone.index(this.indexName);
+            await index.deleteMany(ids);
+            console.log(`✅ Deletados ${ids.length} vetores do Pinecone`);
+        }
+        catch (error) {
+            console.error(`❌ Erro ao deletar ${ids.length} vetores:`, error);
+            throw error;
+        }
+    }
+    async getIndexStats() {
+        try {
+            const index = this.pinecone.index(this.indexName);
+            const stats = await index.describeIndexStats();
+            return stats;
+        }
+        catch (error) {
+            console.error('❌ Erro ao obter estatísticas do índice:', error);
+            throw error;
+        }
+    }
+    async query(params) {
+        try {
+            const index = this.pinecone.index(this.indexName);
+            const result = await index.query(params);
+            return result;
+        }
+        catch (error) {
+            console.error('❌ Erro ao fazer query no Pinecone:', error);
+            throw error;
+        }
+    }
 }
 exports.PineconeRepository = PineconeRepository;
 exports.default = PineconeRepository;

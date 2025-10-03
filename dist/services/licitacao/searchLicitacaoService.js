@@ -4,21 +4,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const LicitacaoAdapterFactory_1 = __importDefault(require("../../adapters/factories/LicitacaoAdapterFactory"));
-const pineconeLicitacaoRepository_1 = __importDefault(require("../../repositories/pineconeLicitacaoRepository"));
+const licitacaoStorageService_1 = __importDefault(require("./licitacaoStorageService"));
 const buscarLicitacoes = async (params) => {
     const startTime = Date.now();
     const fonte = params.fonte || LicitacaoAdapterFactory_1.default.getFonteDefault();
     const adapter = LicitacaoAdapterFactory_1.default.create(fonte);
-    console.log(`🔍 Buscando licitações via ${adapter.getNomeFonte().toUpperCase()}...`);
+    // 📋 LOG DAS MODALIDADES
+    const modalidadesInfo = params.modalidades
+        ? `modalidades [${params.modalidades.join(', ')}]`
+        : 'TODAS as modalidades';
+    console.log(`🔍 Buscando licitações via ${adapter.getNomeFonte().toUpperCase()} - ${modalidadesInfo}...`);
     const licitacoes = await adapter.buscarLicitacoes(params);
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
     console.log(`⏱️ Busca concluída em ${duration}s`);
     return licitacoes;
 };
-const searchLicitacao = async (data) => {
-    const licitacoes = await buscarLicitacoes(data);
-    // 🎯 FILTRO: Apenas licitações realmente ativas
+// 📅 FILTRO DE DATA CENTRALIZADO (alinhado com migrateHistoricalLicitacoes.ts)
+const filterByDataEncerramento = (licitacoes) => {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0); // Reset horas para comparação correta
     const licitacoesAtivas = licitacoes.filter(licitacao => {
@@ -36,29 +39,36 @@ const searchLicitacao = async (data) => {
             dataEncerramentoObj = new Date(ano, mes, dia);
         }
         else if (dataEncerramento.includes('T')) {
-            // ISO format: 2025-09-22T10:00:00
+            // ISO format with time (YYYY-MM-DDTHH:mm:ss)
             dataEncerramentoObj = new Date(dataEncerramento);
         }
         else {
             // YYYY-MM-DD
             dataEncerramentoObj = new Date(dataEncerramento);
         }
-        // Resetar horas da data de encerramento para comparação apenas de dia
-        dataEncerramentoObj.setHours(23, 59, 59, 999); // Final do dia
         return dataEncerramentoObj > hoje;
     });
+    return licitacoesAtivas;
+};
+const searchLicitacao = async (data) => {
+    const licitacoes = await buscarLicitacoes(data);
+    // 🎯 USAR FILTRO CENTRALIZADO (mesma lógica do migration)
+    const licitacoesAtivas = filterByDataEncerramento(licitacoes);
     console.log(`🔍 Filtro aplicado: ${licitacoes.length} → ${licitacoesAtivas.length} licitações ativas`);
-    console.log(`📅 Critério: dataEncerramentoProposta > ${hoje.toISOString().split('T')[0]}`);
-    // Log de debug para amostra de licitações filtradas
+    // Log simplificado (alinhado com migration)
     if (licitacoes.length > licitacoesAtivas.length) {
-        const filtradas = licitacoes.filter(l => !licitacoesAtivas.includes(l));
-        console.log(`❌ Exemplos de licitações filtradas (${filtradas.length} total):`);
-        filtradas.slice(0, 3).forEach(l => {
-            console.log(`   - ${l.numeroControlePNCP}: data=${l.dataEncerramentoProposta}`);
-        });
+        const filtradas = licitacoes.length - licitacoesAtivas.length;
+        console.log(`❌ ${filtradas} licitações filtradas (data de encerramento expirada)`);
     }
-    console.log(`💾 Salvando ${licitacoesAtivas.length} licitações ativas no Pinecone...`);
-    await pineconeLicitacaoRepository_1.default.saveLicitacoes(licitacoesAtivas);
+    console.log(`💾 Salvando ${licitacoesAtivas.length} licitações ativas usando LicitacaoStorageService...`);
+    // Usar o serviço de storage para coordenar salvamento em ambos os bancos
+    const storageResult = await licitacaoStorageService_1.default.saveLicitacoes(licitacoesAtivas);
+    if (storageResult.success) {
+        console.log(`✅ Salvou ${storageResult.total} licitações (Supabase: ${storageResult.supabase}, Pinecone: ${storageResult.pinecone})`);
+    }
+    else {
+        console.error(`❌ Falhas no salvamento:`, storageResult.errors);
+    }
     return {
         total: licitacoesAtivas.length,
         licitacoes: licitacoesAtivas,
@@ -66,4 +76,4 @@ const searchLicitacao = async (data) => {
         message: `${licitacoesAtivas.length} licitações ativas salvas (${licitacoes.length - licitacoesAtivas.length} finalizadas ignoradas)`
     };
 };
-exports.default = { searchLicitacao };
+exports.default = { searchLicitacao, filterByDataEncerramento };

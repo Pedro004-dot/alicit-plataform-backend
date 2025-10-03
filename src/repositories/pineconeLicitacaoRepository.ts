@@ -201,14 +201,13 @@ class PineconeLicitacaoRepository {
             id: `licitacao:${licitacao.numeroControlePNCP}`,
             values: embedding,
             metadata: {
-              // 🔄 SIMPLIFICADO: Apenas metadados essenciais para busca semântica
-              // Dados completos agora ficam no Supabase
+              // 🔄 FLAT METADATA: Respeitando limite 40KB e estrutura plana do Pinecone
               numeroControlePNCP: licitacao.numeroControlePNCP,
-              objetoCompra: (licitacao.objetoCompra || '').substring(0, 1000),
+              objetoCompra: (licitacao.objetoCompra || '').substring(0, 500), // Reduzido
               valorTotal: licitacao.valorTotalEstimado || 0,
               createdAt: new Date().toISOString(),
-              itens: licitacao.itens
-              // Removido: data (JSON completo), objetoCompraCompleto, situacaoCompra, etc.
+              // ❌ Removido: itens (violava estrutura plana + limite 40KB)
+              totalItens: licitacao.itens?.length || 0 // Apenas contagem
             }
           };
           
@@ -235,9 +234,9 @@ class PineconeLicitacaoRepository {
           // Continua com próximo batch
         }
         
-        // MELHORIA 5: Pequena pausa entre batches para não sobrecarregar
+        // MELHORIA 5: Pausa maior para evitar rate limiting (Pinecone: 100 req/min)
         if (i + BATCH_SIZE < vectors.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1s entre batches
         }
       }
       
@@ -344,10 +343,19 @@ class PineconeLicitacaoRepository {
         await index.upsert(batch);
         return; // Sucesso
       } catch (error) {
+        console.error(`❌ ERRO PINECONE - Tentativa ${attempt}/${maxRetries}:`, {
+          error: (error as any).message || error,   
+          errorCode: (error as any).code || 'N/A',
+          batchSize: batch.length,
+          vectorIds: batch.slice(0, 3).map(v => v.id), // Primeiros 3 IDs
+          metadataSize: JSON.stringify(batch[0]?.metadata || {}).length + ' chars',
+          vectorDimension: batch[0]?.values?.length || 'N/A'
+        });
+        
         if (attempt === maxRetries) {
           throw error; // Última tentativa, propagar erro
         }
-        console.warn(`⚠️ Tentativa ${attempt} falhou, tentando novamente...`);
+        console.warn(`⚠️ Tentativa ${attempt} falhou, tentando novamente em ${1000 * attempt}ms...`);
         await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Backoff exponencial
       }
     }

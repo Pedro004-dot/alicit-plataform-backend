@@ -32,12 +32,8 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const pinecone_1 = require("@pinecone-database/pinecone");
-const redisCache_1 = __importDefault(require("../services/cache/redisCache"));
 /**
  * Drop-in replacement do Redis usando Pinecone
  * Mantém exatamente a mesma interface para compatibilidade total
@@ -99,9 +95,6 @@ class PineconeLicitacaoRepository {
             throw new Error('Timeout aguardando criação do índice Pinecone');
         }
     }
-    /**
-     * Substitui Redis saveLicitacoes - Interface idêntica
-     */
     async saveLicitacoes(licitacoes) {
         try {
             await this.initialize();
@@ -120,21 +113,13 @@ class PineconeLicitacaoRepository {
                         id: `licitacao:${licitacao.numeroControlePNCP}`,
                         values: embedding,
                         metadata: {
-                            // Licitação completa como JSON
-                            data: JSON.stringify(licitacao),
+                            // 🔄 FLAT METADATA: Respeitando limite 40KB e estrutura plana do Pinecone
                             numeroControlePNCP: licitacao.numeroControlePNCP,
-                            modalidadeNome: licitacao.modalidadeNome || '',
+                            objetoCompra: (licitacao.objetoCompra || '').substring(0, 500), // Reduzido
                             valorTotal: licitacao.valorTotalEstimado || 0,
-                            municipio: licitacao.unidadeOrgao?.municipioNome || '',
-                            uf: licitacao.unidadeOrgao?.ufSigla || '',
-                            // MELHORIA 3: Manter texto completo para busca textual
-                            objetoCompraCompleto: licitacao.objetoCompra || '',
-                            objetoCompra: (licitacao.objetoCompra || '').substring(0, 1000),
-                            situacaoCompra: licitacao.situacaoCompraNome || '',
-                            dataAbertura: licitacao.dataAberturaProposta || '',
-                            orgaoRazaoSocial: licitacao.orgaoEntidade?.razaoSocial || '',
                             createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
+                            // ❌ Removido: itens (violava estrutura plana + limite 40KB)
+                            totalItens: licitacao.itens?.length || 0 // Apenas contagem
                         }
                     };
                     vectors.push(vector);
@@ -158,9 +143,9 @@ class PineconeLicitacaoRepository {
                 catch (batchError) {
                     // Continua com próximo batch
                 }
-                // MELHORIA 5: Pequena pausa entre batches para não sobrecarregar
+                // MELHORIA 5: Pausa maior para evitar rate limiting (Pinecone: 100 req/min)
                 if (i + BATCH_SIZE < vectors.length) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // 1s entre batches
                 }
             }
             return savedCount;
@@ -195,40 +180,15 @@ class PineconeLicitacaoRepository {
         try {
             // TEXTO ENRIQUECIDO PARA EMBEDDING - Máxima qualidade de matching
             const textoCompleto = [
-                // 1. OBJETO PRINCIPAL
                 licitacao.objetoCompra || '',
-                // 2. INFORMAÇÕES COMPLEMENTARES
                 licitacao.informacaoComplementar || '',
-                licitacao.processo || '',
-                licitacao.justificativaPresencial || '',
-                // 3. CONTEXTO ORGANIZACIONAL
-                licitacao.orgaoEntidade?.razaoSocial || '',
-                licitacao.unidadeOrgao?.nomeUnidade || '',
-                licitacao.modalidadeNome || '',
-                licitacao.modoDisputaNome || '',
-                licitacao.tipoInstrumentoConvocatorioNome || '',
-                // 4. CONTEXTO LEGAL
-                licitacao.amparoLegal?.descricao || '',
-                licitacao.amparoLegal?.nome || '',
-                // 5. ITENS DETALHADOS (Top 10 mais valiosos)
                 licitacao.itens
                     ?.sort((a, b) => (b.valorTotal || 0) - (a.valorTotal || 0)) // Ordenar por valor
-                    ?.slice(0, 10) // Top 10 itens
                     ?.map(item => [
                     item.descricao || '',
                     item.materialOuServicoNome || '',
-                    item.itemCategoriaNome || '',
-                    item.criterioJulgamentoNome || '',
-                    item.ncmNbsDescricao || '',
                     item.informacaoComplementar || '',
-                    // Contexto quantitativo
-                    `Quantidade: ${item.quantidade} ${item.unidadeMedida}`,
-                    `Valor: R$ ${item.valorTotal?.toLocaleString('pt-BR')}`
                 ].filter(Boolean).join(' ')).join('. ') || '',
-                // 6. CONTEXTO GEOGRÁFICO E TEMPORAL
-                `Local: ${licitacao.unidadeOrgao?.municipioNome} - ${licitacao.unidadeOrgao?.ufSigla}`,
-                `Abertura: ${licitacao.dataAberturaProposta}`,
-                `Situação: ${licitacao.situacaoCompraNome}`
             ].filter(Boolean).join('. ').substring(0, 8000); // Limite de tokens OpenAI
             if (!textoCompleto.trim()) {
                 // Fallback para vector neutro se não há texto
@@ -279,28 +239,32 @@ class PineconeLicitacaoRepository {
                 return; // Sucesso
             }
             catch (error) {
+                console.error(`❌ ERRO PINECONE - Tentativa ${attempt}/${maxRetries}:`, {
+                    error: error.message || error,
+                    errorCode: error.code || 'N/A',
+                    batchSize: batch.length,
+                    vectorIds: batch.slice(0, 3).map(v => v.id), // Primeiros 3 IDs
+                    metadataSize: JSON.stringify(batch[0]?.metadata || {}).length + ' chars',
+                    vectorDimension: batch[0]?.values?.length || 'N/A'
+                });
                 if (attempt === maxRetries) {
                     throw error; // Última tentativa, propagar erro
                 }
-                console.warn(`⚠️ Tentativa ${attempt} falhou, tentando novamente...`);
+                console.warn(`⚠️ Tentativa ${attempt} falhou, tentando novamente em ${1000 * attempt}ms...`);
                 await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Backoff exponencial
             }
         }
     }
     /**
-     * Substitui Redis getLicitacao - Interface idêntica
+     * REMOVIDO: getLicitacao agora é responsabilidade do Supabase
+     * Mantido apenas para compatibilidade durante transição
      */
     async getLicitacao(numeroControlePNCP) {
+        console.warn('⚠️ DEPRECATED: getLicitacao() do Pinecone foi movido para Supabase. Use supabaseLicitacaoRepository.getLicitacao()');
         try {
             await this.initialize();
             const index = this.pinecone.index(this.indexName);
-            // Tentar buscar diretamente primeiro
-            const fetchResponse = await index.fetch([`licitacao:${numeroControlePNCP}`]);
-            const vector = fetchResponse.records?.[`licitacao:${numeroControlePNCP}`];
-            if (vector && vector.metadata?.data) {
-                const licitacao = JSON.parse(vector.metadata.data);
-                return licitacao;
-            }
+            // Busca simplificada apenas para fallback
             const queryResponse = await index.query({
                 vector: new Array(1536).fill(0.1),
                 topK: 1,
@@ -318,26 +282,23 @@ class PineconeLicitacaoRepository {
             return null;
         }
         catch (error) {
-            console.error('❌ Erro ao buscar licitação no Pinecone:', error);
+            console.error('❌ Erro ao buscar licitação no Pinecone (fallback):', error);
             return null;
         }
     }
     /**
-     * Busca todas as licitações com cache Redis - Interface compatível com Redis
+     * REMOVIDO: getAllLicitacoes agora é responsabilidade do Supabase
+     * Mantido apenas para compatibilidade durante transição
      */
     async getAllLicitacoes() {
+        console.warn('⚠️ DEPRECATED: getAllLicitacoes() do Pinecone foi movido para Supabase. Use supabaseLicitacaoRepository.getAllLicitacoes()');
         try {
-            // 1. Tentar buscar do cache primeiro
-            const cached = await redisCache_1.default.getCachedLicitacoes();
-            if (cached) {
-                return cached;
-            }
-            // 2. Se não tem cache, buscar do Pinecone
+            // Busca simplificada apenas para fallback
             await this.initialize();
             const index = this.pinecone.index(this.indexName);
             const queryResponse = await index.query({
                 vector: new Array(1536).fill(0.1),
-                topK: 10000,
+                topK: 1000, // Reduzido para fallback
                 includeValues: false,
                 includeMetadata: true,
                 filter: { numeroControlePNCP: { $exists: true } }
@@ -347,7 +308,7 @@ class PineconeLicitacaoRepository {
                 if (match.metadata?.data) {
                     try {
                         const licitacao = JSON.parse(match.metadata.data);
-                        if (licitacao && licitacao.numeroControlePNCP && licitacao.itens?.length > 0) {
+                        if (licitacao && licitacao.numeroControlePNCP) {
                             licitacoes.push(licitacao);
                         }
                     }
@@ -356,14 +317,10 @@ class PineconeLicitacaoRepository {
                     }
                 }
             }
-            // 3. Salvar no cache para próximas consultas (5 minutos)
-            if (licitacoes.length > 0) {
-                await redisCache_1.default.cacheLicitacoes(licitacoes, 300);
-            }
             return licitacoes;
         }
         catch (error) {
-            console.error('❌ Erro ao buscar todas licitações no Pinecone:', error);
+            console.error('❌ Erro ao buscar licitações no Pinecone (fallback):', error);
             return [];
         }
     }
@@ -523,10 +480,68 @@ class PineconeLicitacaoRepository {
         }
     }
     /**
-     * Busca textual otimizada usando estratégias múltiplas
-     * Solução para limitação do topK=10,000 com 109k+ registros
+     * NOVO: Busca semântica que retorna apenas IDs para uso híbrido com Supabase
+     */
+    async buscarIdsRelevantes(texto) {
+        try {
+            await this.initialize();
+            const index = this.pinecone.index(this.indexName);
+            if (!texto || texto.trim().length < 3)
+                return [];
+            // Gerar embedding do texto de busca
+            const queryEmbedding = await this.generateQueryEmbedding(texto);
+            // Busca semântica otimizada
+            const queryResponse = await index.query({
+                vector: queryEmbedding,
+                topK: 100, // Reduzido para performance
+                includeValues: false,
+                includeMetadata: true,
+                filter: { numeroControlePNCP: { $exists: true } }
+            });
+            // Retornar apenas IDs dos resultados mais relevantes
+            const ids = queryResponse.matches
+                ?.filter(match => match.score && match.score > 0.7) // Filtro de relevância
+                ?.map(match => match.metadata?.numeroControlePNCP)
+                ?.filter(Boolean) || [];
+            console.log(`🎯 Busca semântica encontrou ${ids.length} IDs relevantes para: "${texto}"`);
+            return ids;
+        }
+        catch (error) {
+            console.error('❌ Erro na busca semântica por IDs:', error);
+            return [];
+        }
+    }
+    /**
+     * Gerar embedding para query de busca
+     */
+    async generateQueryEmbedding(texto) {
+        try {
+            if (process.env.OPENAI_API_KEY) {
+                const { OpenAI } = await Promise.resolve().then(() => __importStar(require('openai')));
+                const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+                const response = await openai.embeddings.create({
+                    model: 'text-embedding-3-small',
+                    input: texto.substring(0, 8000),
+                    encoding_format: 'float',
+                });
+                return response.data[0].embedding;
+            }
+            else {
+                return this.generateHashBasedVector(texto);
+            }
+        }
+        catch (error) {
+            console.error('❌ Erro ao gerar embedding da query:', error);
+            return this.generateHashBasedVector(texto);
+        }
+    }
+    /**
+     * DEPRECATED: Busca textual otimizada - Use buscarIdsRelevantes + Supabase
+     * Mantido para compatibilidade durante transição
      */
     async buscarPorTexto(texto) {
+        console.warn('⚠️ DEPRECATED: buscarPorTexto() foi substituído por buscarIdsRelevantes() + Supabase');
+        // Implementação simplificada para fallback
         try {
             await this.initialize();
             const index = this.pinecone.index(this.indexName);
@@ -675,10 +690,14 @@ class PineconeLicitacaoRepository {
 // Export com mesma interface do Redis
 const pineconeLicitacaoRepository = new PineconeLicitacaoRepository();
 exports.default = {
+    // 🔄 MÉTODOS PRINCIPAIS (Embeddings semânticos)
     saveLicitacoes: (licitacoes) => pineconeLicitacaoRepository.saveLicitacoes(licitacoes),
+    buscarIdsRelevantes: (texto) => pineconeLicitacaoRepository.buscarIdsRelevantes(texto),
+    // ⚠️ MÉTODOS DEPRECATED (Migrados para Supabase)
     getLicitacao: (numeroControlePNCP) => pineconeLicitacaoRepository.getLicitacao(numeroControlePNCP),
     getAllLicitacoes: () => pineconeLicitacaoRepository.getAllLicitacoes(),
     buscarPorTexto: (texto) => pineconeLicitacaoRepository.buscarPorTexto(texto),
+    // 🗂️ CACHE SERVICE (Mantido para compatibilidade)
     getCachedText: (key) => pineconeLicitacaoRepository.getCachedText(key),
     setCachedText: (key, value) => pineconeLicitacaoRepository.setCachedText(key, value),
     getCachedScore: (key) => pineconeLicitacaoRepository.getCachedScore(key),
@@ -686,11 +705,12 @@ exports.default = {
     clearTextCache: () => pineconeLicitacaoRepository.clearTextCache(),
     clearScoreCache: () => pineconeLicitacaoRepository.clearScoreCache(),
     clearAllCaches: () => pineconeLicitacaoRepository.clearAllCaches(),
+    // 🏛️ MUNICÍPIOS (Placeholder - pode ser implementado no Supabase)
     loadMunicipiosToRedis: () => pineconeLicitacaoRepository.loadMunicipiosToRedis(),
     getMunicipioByIbge: (codigoIbge) => pineconeLicitacaoRepository.getMunicipioByIbge(codigoIbge),
     getMunicipioByNome: (nome) => pineconeLicitacaoRepository.getMunicipioByNome(nome),
     checkMunicipiosLoaded: () => pineconeLicitacaoRepository.checkMunicipiosLoaded(),
-    // Métodos de inspeção
+    // 🔍 MÉTODOS DE INSPEÇÃO (Mantidos para debug)
     getIndexStats: () => pineconeLicitacaoRepository.getIndexStats(),
     getSampleData: (limit) => pineconeLicitacaoRepository.getSampleData(limit),
     analyzeMetadataStructure: () => pineconeLicitacaoRepository.analyzeMetadataStructure(),

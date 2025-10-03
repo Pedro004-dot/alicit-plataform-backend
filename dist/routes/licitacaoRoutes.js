@@ -11,6 +11,8 @@ const statusLicitacaoEmpresaController_1 = __importDefault(require("../controlle
 const recomendacaoController_1 = __importDefault(require("../controller/licitacao/recomendacaoController"));
 const dashboardController_1 = __importDefault(require("../controller/licitacao/dashboardController"));
 const pineconeDiagnosticController_1 = __importDefault(require("../controller/licitacao/pineconeDiagnosticController"));
+const syncDiagnosticController_1 = __importDefault(require("../controller/licitacao/syncDiagnosticController"));
+const cleanupOrfasController_1 = __importDefault(require("../controller/licitacao/cleanupOrfasController"));
 const getUniqueLicitacaoController_1 = __importDefault(require("../controller/licitacao/getUniqueLicitacaoController"));
 const migrateHistoricalController_1 = __importDefault(require("../controller/licitacao/migrateHistoricalController"));
 const router = (0, express_1.Router)();
@@ -31,6 +33,10 @@ router.get('/pinecone/index-stats', pineconeDiagnosticController_1.default.obter
 router.get('/pinecone/samples', pineconeDiagnosticController_1.default.obterAmostrasRecords);
 router.get('/pinecone/metadata-structure', pineconeDiagnosticController_1.default.analisarEstruturaMetadata);
 router.get('/pinecone/full-structure', pineconeDiagnosticController_1.default.obterEstruturaCompleta);
+// diagnostico de sincronizacao Supabase vs Pinecone
+router.get('/sync/diagnostic', syncDiagnosticController_1.default.diagnosticarSincronizacao);
+// limpeza de licitacoes orfas (dessincronizadas)
+router.delete('/sync/cleanup-orfas', cleanupOrfasController_1.default.apagarLicitacoesOrfas);
 // rotas de dashboard (DEVEM VIR ANTES das rotas /empresa para evitar conflitos)
 router.get('/:cnpj/dashboard', dashboardController_1.default.getDashboardData);
 router.get('/:cnpj/estagios', dashboardController_1.default.getLicitacoesComEstagios);

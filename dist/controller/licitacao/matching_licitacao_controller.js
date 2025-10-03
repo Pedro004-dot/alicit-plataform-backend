@@ -27,8 +27,6 @@ const calculateMatching = async (req, res) => {
         let totalRecomendacoesCriadas = 0;
         let sucessos = 0;
         let falhas = 0;
-        console.log(`🔄 Processando ${empresas.length} empresas sequencialmente...`);
-        // Processar cada empresa sequencialmente
         for (let i = 0; i < empresas.length; i++) {
             const empresa = empresas[i];
             const inicioEmpresa = Date.now();
