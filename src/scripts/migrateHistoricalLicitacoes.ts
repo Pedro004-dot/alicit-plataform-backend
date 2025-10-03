@@ -145,7 +145,7 @@ export class HistoricalLicitacaoMigrator {
           promises.length = 0; // Clear array
           
           if (page < endPage) {
-            await this.sleep(2000); // Pausa respeitosa entre requests (PNCP é API pública)
+            await this.sleep(2500); // Pausa padronizada com adapter (2.5s)
           }
         }
       }
@@ -258,56 +258,112 @@ export class HistoricalLicitacaoMigrator {
   }
 
   private async fetchPage(modalidade: number, params: HistoricalMigrationParams, pagina: number) {
-    const url = 'https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao';
+    const maxRetries = 3;
+    const REQUEST_DELAY = 2500; // 2.5s (padronizado com adapter)
     
-    const queryParams = new URLSearchParams({
-      dataInicial: params.dataInicio,
-      dataFinal: params.dataFim,
-      codigoModalidadeContratacao: modalidade.toString(),
-      pagina: pagina.toString()
-    });
-    
-    const fullUrl = `${url}?${queryParams}`;
-    
-    // Delay conforme boas práticas PNCP (ser respeitoso com a API pública)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    try {
-      // Timeout de 60 segundos por request
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(`Timeout de 60s na página ${pagina}`)), 60000);
+    for (let tentativa = 1; tentativa <= maxRetries; tentativa++) {
+      const url = 'https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao';
+      
+      const queryParams = new URLSearchParams({
+        dataInicial: params.dataInicio,
+        dataFinal: params.dataFim,
+        codigoModalidadeContratacao: modalidade.toString(),
+        pagina: pagina.toString()
       });
       
-      const fetchPromise = fetch(fullUrl, {
-        headers: {
-          'User-Agent': 'Alicit-Integration/2.0 (Sistema de Análise de Licitações)',
-          'Accept': 'application/json',
-          'Accept-Language': 'pt-BR',
-          'Connection': 'keep-alive',
-          'Cache-Control': 'no-cache'
+      const fullUrl = `${url}?${queryParams}`;
+      
+      // 🕰️ DELAY PADRONIZADO (mais conservador)
+      await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY));
+      
+      try {
+        // Timeout de 60 segundos por request
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error(`Timeout de 60s na página ${pagina}`)), 60000);
+        });
+        
+        const fetchPromise = fetch(fullUrl, {
+          headers: {
+            'User-Agent': 'Alicit-Integration/2.0 (Sistema de Análise de Licitações)',
+            'Accept': 'application/json',
+            'Accept-Language': 'pt-BR',
+            'Connection': 'keep-alive',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        // 📊 TRATAMENTO ESPECÍFICO DE CÓDIGOS HTTP (alinhado com adapter)
+        if (response.status === 204) {
+          console.log(`📄 PNCP: Sem conteúdo (204) - página ${pagina}`);
+          return null;
         }
-      });
-      
-      const response = await Promise.race([fetchPromise, timeoutPromise]);
-      
-      if (!response.ok) {
-        console.warn(`⚠️ HTTP ${response.status} - página ${pagina}`);
-        return null;
-      }
+        
+        if (response.status === 400) {
+          console.warn(`⚠️ PNCP: Bad Request (400) - página ${pagina}`);
+          return null;
+        }
+        
+        if (response.status === 422) {
+          console.warn(`⚠️ PNCP: Unprocessable Entity (422) - página ${pagina}`);
+          return null;
+        }
+        
+        // 🔄 RETRY PARA HTTP 500 (implementação robusta)
+        if (response.status === 500) {
+          if (tentativa < maxRetries) {
+            const retryDelay = 3000 + (tentativa * 1000); // 3s, 4s, 5s
+            console.warn(`⚠️ PNCP: HTTP 500 - página ${pagina}, tentativa ${tentativa}/${maxRetries}. Retry em ${retryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            continue; // Tenta novamente
+          } else {
+            console.error(`❌ PNCP: HTTP 500 persistente após ${maxRetries} tentativas - página ${pagina}`);
+            return null;
+          }
+        }
+        
+        if (!response.ok) {
+          console.warn(`⚠️ PNCP: HTTP ${response.status} - página ${pagina}`);
+          return null;
+        }
 
-      const text = await response.text();
-      
-      if (!text.trim()) {
-        console.warn(`⚠️ Resposta vazia - página ${pagina}`);
-        return null;
-      }
+        const text = await response.text();
+        
+        if (!text.trim()) {
+          console.warn(`⚠️ PNCP: Resposta vazia - página ${pagina}`);
+          return null;
+        }
 
-      const parsed = JSON.parse(text);
-      return parsed;
-    } catch (error) {
-      console.error(`❌ ERRO página ${pagina}:`, error);
-      return null;
+        const parsed = JSON.parse(text);
+        
+        // 📊 VALIDAR ESTRUTURA CONFORME DOCUMENTAÇÃO
+        if (!parsed.data && parsed.totalRegistros === undefined) {
+          console.warn(`⚠️ PNCP: Estrutura inválida - página ${pagina}`);
+          return null;
+        }
+        
+        // ✅ SUCESSO - retorna resultado
+        console.log(`✅ PNCP: Página ${pagina} processada com sucesso (tentativa ${tentativa})`);
+        return parsed;
+        
+      } catch (error: any) {
+        if (error.message?.includes('Timeout')) {
+          console.warn(`⏱️ PNCP: Timeout página ${pagina}, tentativa ${tentativa}/${maxRetries}`);
+        } else {
+          console.error(`❌ PNCP: Erro página ${pagina}, tentativa ${tentativa}:`, error.message);
+        }
+        
+        if (tentativa < maxRetries) {
+          const retryDelay = Math.pow(2, tentativa) * 1000; // Backoff exponencial
+          console.log(`🔄 PNCP: Reagendando página ${pagina} para ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
     }
+    
+    console.error(`💥 PNCP: Falha definitiva após ${maxRetries} tentativas - página ${pagina}`);
+    return null;
   }
 
   private sleep(ms: number): Promise<void> {
