@@ -8,7 +8,7 @@ const calculateMatching = async (empresaPerfil: EmpresaPerfil): Promise<MatchRes
   try {
     console.log('🚀 Iniciando matching híbrido (Pinecone + Supabase)...');
     
-    // 1. BUSCA SEMÂNTICA NO PINECONE - apenas IDs + scores
+    
     const pineconeResults = await searchSemantic(empresaPerfil);
     
     if (!pineconeResults.length) {

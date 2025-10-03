@@ -205,11 +205,9 @@ class PineconeLicitacaoRepository {
               // Dados completos agora ficam no Supabase
               numeroControlePNCP: licitacao.numeroControlePNCP,
               objetoCompra: (licitacao.objetoCompra || '').substring(0, 1000),
-              modalidadeNome: licitacao.modalidadeNome || '',
-              uf: licitacao.unidadeOrgao?.ufSigla || '',
-              municipio: licitacao.unidadeOrgao?.municipioNome || '',
               valorTotal: licitacao.valorTotalEstimado || 0,
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
+              itens: licitacao.itens
               // Removido: data (JSON completo), objetoCompraCompleto, situacaoCompra, etc.
             }
           };
@@ -278,46 +276,17 @@ class PineconeLicitacaoRepository {
     try {
       // TEXTO ENRIQUECIDO PARA EMBEDDING - Máxima qualidade de matching
       const textoCompleto = [
-        // 1. OBJETO PRINCIPAL
         licitacao.objetoCompra || '',
-        
-        // 2. INFORMAÇÕES COMPLEMENTARES
         licitacao.informacaoComplementar || '',
-        licitacao.processo || '',
-        licitacao.justificativaPresencial || '',
-        
-        // 3. CONTEXTO ORGANIZACIONAL
-        licitacao.orgaoEntidade?.razaoSocial || '',
-        licitacao.unidadeOrgao?.nomeUnidade || '',
-        licitacao.modalidadeNome || '',
-        licitacao.modoDisputaNome || '',
-        licitacao.tipoInstrumentoConvocatorioNome || '',
-        
-        // 4. CONTEXTO LEGAL
-        licitacao.amparoLegal?.descricao || '',
-        licitacao.amparoLegal?.nome || '',
-        
-        // 5. ITENS DETALHADOS (Top 10 mais valiosos)
         licitacao.itens
           ?.sort((a, b) => (b.valorTotal || 0) - (a.valorTotal || 0)) // Ordenar por valor
-          ?.slice(0, 10) // Top 10 itens
           ?.map(item => [
             item.descricao || '',
             item.materialOuServicoNome || '',
-            item.itemCategoriaNome || '',
-            item.criterioJulgamentoNome || '',
-            item.ncmNbsDescricao || '',
             item.informacaoComplementar || '',
-            // Contexto quantitativo
-            `Quantidade: ${item.quantidade} ${item.unidadeMedida}`,
-            `Valor: R$ ${item.valorTotal?.toLocaleString('pt-BR')}`
           ].filter(Boolean).join(' ')
           ).join('. ') || '',
           
-        // 6. CONTEXTO GEOGRÁFICO E TEMPORAL
-        `Local: ${licitacao.unidadeOrgao?.municipioNome} - ${licitacao.unidadeOrgao?.ufSigla}`,
-        `Abertura: ${licitacao.dataAberturaProposta}`,
-        `Situação: ${licitacao.situacaoCompraNome}`
       ].filter(Boolean).join('. ').substring(0, 8000); // Limite de tokens OpenAI
       
       if (!textoCompleto.trim()) {

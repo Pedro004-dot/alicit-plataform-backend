@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import searchLicitacaoService from "../../services/licitacao/searchLicitacaoService";
 
-// 📋 MODALIDADES DISPONÍVEIS (Lei 14.133/2021)
+
 const MODALIDADES_DISPONIVEIS = {
   1: 'Pregão',
   2: 'Concorrência', 
@@ -14,7 +14,6 @@ const searchLicitacao = async (req: Request, res: Response) => {
   try {
     const { modalidades, fonte } = req.body;
     
-    // 📋 VALIDAR MODALIDADES (se informadas)
     let modalidadesValidas: number[] | undefined;
     
     if (modalidades) {
@@ -42,15 +41,14 @@ const searchLicitacao = async (req: Request, res: Response) => {
       console.log(`📋 Nenhuma modalidade especificada - buscando TODAS as modalidades`);
     }
     
-    // 📅 DATA SEMPRE HOJE (não aceita parâmetros de data)
     const hoje = new Date().toISOString().split('T')[0];
     console.log(`📅 Buscando licitações do dia: ${hoje}`);
     
     const search = await searchLicitacaoService.searchLicitacao({
       dataInicio: hoje,
       dataFim: hoje,
-      fonte, // opcional: especifica fonte (pncp, etc.) ou usa padrão
-      modalidades: modalidadesValidas // undefined = todas, array = específicas
+      fonte,  
+      modalidades: modalidadesValidas 
     });
     
     res.status(201).json({
